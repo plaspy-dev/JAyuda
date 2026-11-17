@@ -2,6 +2,30 @@
 
 # include "ArrayDB.h"
 # include "threadmysql.h"
+# include "TunnelSocket.h"
+
+class CTunnelSocketThread : public CThreadAuto
+{
+protected:
+	virtual bool	Init();
+public:
+	CTunnelSocket	*m_pTunnelSocket;
+	CTunnelSocketThread(int tipo, CString proxy, int puerto, CString destino, int puertodestino, CString usuario, CString contrasena);
+	~CTunnelSocketThread(void);
+	void Wait();
+};
+
+class CConector;
+
+class CTimerThread : public CThreadAuto
+{
+protected:	
+	virtual bool	Init();
+public:
+	CConector *m_pConector;
+	CTimerThread(CConector *conector);
+	~CTimerThread();
+};
 
 //***************************************************************************
 //
@@ -52,7 +76,8 @@ private:
 	int										m_nReintentos;
 	int										m_nLastState;
 	CUIntArray								m_nDatabase;
-
+	static CTunnelSocketThread				*m_pTunnelThread;
+	CTimerThread							*m_pThreadTimer;
 // Operations
 public:
 	//***********************************************************************
@@ -103,6 +128,7 @@ public:
 	// Notes:		None.
 	//***********************************************************************
 	void		SetPasswd(CString passwd);
+	CString		GetPasswd();
 	//***********************************************************************
 	// Name:		CloseConections
 	// Description:	Cierra las conexiones actuales.
@@ -144,6 +170,7 @@ public:
 	// Notes:		see QueryBinary for binarios.
 	//***********************************************************************
 	int			Query( CString query, int id=0, CWnd *parent=NULL, int usedatabase=0);
+	ULONG		QueryModal( CString query, CStringArray *valores=NULL, CStringArray *columnas=NULL);
 	//***********************************************************************
 	// Name:		QueryBinary
 	// Description:	Comun Query, el primer dato es binario.
@@ -211,12 +238,19 @@ public:
 	bool		EsIncrustado() const;
 	void		OnDestroy();
 
-	
-	CArrayDB	*GetDatabaseAt(int index);
-	CArrayDB	*GetDatabaseModalAt(int index);
 	CConector &operator=(CConector &conector);
 	bool		RealDeleteThread();
+	CTunnelSocket *GetTunnel();
+	CString		GetHost() const;
+	int			GetPort() const;
+	bool		IsEmbedded() const;
+	void		SetTimeOut(unsigned int timeout);
+
+protected:
+	CArrayDB	*GetDatabaseAt(int index);
+	CArrayDB	*GetDatabaseModalAt(int index);
 
 private:
 	void									RealQuery();
+	friend CTimerThread;
 };

@@ -2,9 +2,12 @@
 # include "conector.h"
 #include "realconector.h"
 # include "ThreadMySQL.h"
+# include "resource.h"
 # include <atlbase.h>
 // tamaño maximo del archivo de logs 1Mega
 # define MAX_LOG_SIZE 1*1024*1024
+
+CTunnelSocketThread *CConector::m_pTunnelThread=NULL;
 
 CConector::CConector() {
 
@@ -17,6 +20,7 @@ CConector::CConector() {
 	m_nLastState= -1;
 	m_pThread= NULL;
 	m_pThreadOld= NULL;
+	m_pThreadTimer=NULL;
 }
 
 CConector::~CConector() {
@@ -35,10 +39,32 @@ void CConector::OnDestroy() {
 	m_nDatabase.RemoveAll();
 	m_pMutex.Unlock();
 	if(m_pThread) {
-		// m_pThread->WaitOnDestroy(false);
-		delete m_pThread;
+		m_pThread->m_pParent= NULL;
+		m_pThread->GetArrayDB()->SetPadre(NULL);
+		MSG msg;
+
+		while(m_pThread && m_pThread->IsRunning()) {
+			if(::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			{
+				::TranslateMessage(&msg);
+				::DispatchMessage(&msg);
+			}
+		}
+		if(m_pThreadOld) {
+			m_pThreadOld->Kill();
+			m_pThreadOld=NULL;
+		}
+		ASSERT(!m_pThread);
+		if(m_pThread) {
+			m_pThread->Kill();
+			m_pThread=NULL;
+		}
 	}
-	m_pThread=NULL;
+	if(m_pThreadTimer) {
+		m_pThreadTimer->Kill();
+		m_pThreadTimer->m_pConector=NULL;
+		m_pThreadTimer=NULL;
+	}
 }
 
 void CConector::SetMainFrame( CWnd *parent) {
@@ -54,6 +80,11 @@ CConector& CConector::operator=(CConector &conector)
 	FUNCTION_STACK_TRACE("FFFFC012");
 	if (&conector != this)
 	{
+		if(m_pThreadTimer) {
+			m_pThreadTimer->Kill();
+			m_pThreadTimer->m_pConector=NULL;
+			m_pThreadTimer=NULL;
+		}
 		m_pArrayDB.RemoveAll();
 		for ( int i=0; i<conector.m_pArrayDB.GetCount(); i++) {
 
@@ -75,6 +106,12 @@ CConector& CConector::operator=(CConector &conector)
 	return *this;
 }
 
+void CConector::SetTimeOut(unsigned int timeout) {
+
+	m_pArrayDB.SetTimeOut(timeout);
+	m_pArrayDBModal.SetTimeOut(timeout);
+}
+
 bool CConector::EsIncrustado() const {
 
 	return m_pArrayDB.EsIncrustado();
@@ -83,11 +120,18 @@ bool CConector::EsIncrustado() const {
 bool CConector::Ping() {
 
 	FUNCTION_STACK_TRACE("FFFFC013");
-	if( !m_bRunning)
-		return m_pArrayDB.Ping();
-	if( !m_bModal)
-		return m_pArrayDBModal.Ping();
-	return false;
+	bool retorno=false;
+	if( !m_bRunning) {
+		m_pMutex.Lock();
+		retorno= m_pArrayDB.Ping();
+		m_pMutex.Unlock();
+	}
+	if( !m_bModal) {
+		m_pArrayDBModal.Lock();
+		retorno= m_pArrayDBModal.Ping();
+		m_pArrayDBModal.UnLock();
+	}
+	return retorno;
 }
 
 bool CConector::AddDataBase(CString nombreDB, CString user, CString passwd, CString host, int port, bool incrustado/*=false*/) {
@@ -124,12 +168,28 @@ void CConector::CopyState() {
 	}
 }
 
+CString	CConector::GetHost() const {
+
+	return (m_pTunnelThread && m_pTunnelThread->m_pTunnelSocket) ? m_pTunnelThread->m_pTunnelSocket->GetDestino() : m_pArrayDB.GetHost();
+}
+
+int	CConector::GetPort() const {
+
+	return (m_pTunnelThread && m_pTunnelThread->m_pTunnelSocket) ? m_pTunnelThread->m_pTunnelSocket->GetPuertoDestino() : m_pArrayDB.GetPort();
+}
+
+bool CConector::IsEmbedded() const {
+
+	return m_pArrayDB.EsIncrustado();
+}
+
+
 CString CConector::GetNombreDatabase() {
 	
 	FUNCTION_STACK_TRACE("FFFFC015");
 	ASSERT(m_pArrayDB.GetCount());
 	if( m_pArrayDB.GetCount())
-		return m_pArrayDB.GetAt(0)->GetDB();
+		return m_pArrayDB.GetDB();
 	else return NULL;
 }
 
@@ -161,6 +221,11 @@ void CConector::CloseConections() {
 		contrasena= m_pArrayDB.GetAt(0)->GetPassword();
 	}
 	else return;
+	if(m_pThreadTimer) {
+		m_pThreadTimer->Kill();
+		m_pThreadTimer->m_pConector=NULL;
+		m_pThreadTimer=NULL;
+	}
 	m_pArrayDB.RemoveAll();
 	m_pArrayDBModal.RemoveAll();
 	Cargar();
@@ -251,6 +316,7 @@ void CConector::RealQuery() {
 				m_pMutex.Unlock();
 				return;
 			}
+
 			m_pThread->m_nID= m_pIDs.GetAt(0);
 			m_pIDs.RemoveAt(0);
 			CWnd *handle=(CWnd *) m_pArrayCWnd.GetAt(0);
@@ -325,6 +391,51 @@ void CConector::SetPasswd(CString passwd) {
 	}
 }
 
+ULONG CConector::QueryModal( CString query, CStringArray *valores/*=NULL*/, CStringArray *columnas/*=NULL*/) {
+
+	CWaitCursor wait;
+	if(query.IsEmpty()) {
+		ASSERT(FALSE);
+		return -1;
+	}
+	while(true) { // esperamos que se terminen todas las consultas
+		m_pMutex.Lock();
+		if( m_pIDs.IsEmpty() && !m_bRunning) 
+			break;
+		m_pMutex.Unlock();
+
+		MSG msg;
+		if(::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			::TranslateMessage(&msg);
+			::DispatchMessage(&msg);
+		}
+	}
+	m_bRunning=true;
+
+	m_bModal= true;
+	ULONG result= 0;
+	for( int i=0; i<m_pArrayDB.GetCount(); i++) {
+		CArrayDB *info=m_pArrayDB.GetAt(i);
+		if( !info)
+			return -1;
+		info->Lock();
+		info->SetPadre(NULL);
+		info->SetRetry(m_nReintentos);
+		if( (result= info->Find(query, valores, columnas))!=-1) {
+			if(pMainFrame && ::IsWindow(*pMainFrame))
+				pMainFrame->PostMessage(WM_TREADRESULT,2, i);
+			info->UnLock();
+			break;
+		}
+		info->UnLock();
+	}
+	m_bModal= false;
+	m_bRunning=false;
+	m_pMutex.Unlock();
+	RealQuery();
+	return result;
+}
 
 ULONG CConector::Find( CString query, CWnd *parent, CStringArray *valores, CStringArray *columnas) {
 
@@ -363,6 +474,14 @@ bool CConector::TestConection(CWnd *parent) {
 			return true;
 	}
 	return false;
+}
+
+CString CConector::GetPasswd() {
+
+	ASSERT(m_pArrayDB.GetCount());
+	if(m_pArrayDB.GetCount())
+		return m_pArrayDB.GetAt(0)->GetPassword();
+	else return NULL;
 }
 
 CString CConector::GetUser() {
@@ -411,10 +530,15 @@ bool CConector::Guardar(HKEY hKey/*= HKEY_CURRENT_USER*/) {
 	return true;
 }
 
+CTunnelSocket *CConector::GetTunnel() {
+
+	return m_pTunnelThread ? m_pTunnelThread->m_pTunnelSocket : NULL;
+}
+
 bool CConector::Cargar(HKEY hKey/*= HKEY_CURRENT_USER*/) {
 	
 	FUNCTION_STACK_TRACE("FFFFC022");
-
+	
 	CString usuario, contrasena;
 	CString clave, servidor;
 	
@@ -427,6 +551,19 @@ bool CConector::Cargar(HKEY hKey/*= HKEY_CURRENT_USER*/) {
 	CMyRegKey key;
 	key.MyOpen(hKey, CApplicacion::GetAppKey());
 
+	if(m_pTunnelThread==NULL && key.GetInt("conectorp\\proxy", "tipo", 0)!=PROXYTYPE_NOPROXY) {
+
+		m_pTunnelThread= new CTunnelSocketThread(key.GetInt("conectorp\\proxy", "tipo", 0), 
+			key.GetString("conectorp\\proxy", "servidor", ""), 
+			atoi(key.GetString("conectorp\\proxy", "puerto", "")), 
+			key.GetString("conector\\servidor0","servidor"),  // servidor de destino
+			key.GetInt("conector\\servidor0", "puerto", MYSQL_PORT),  // puerto destino
+			key.GetString("conectorp\\proxy", "usuario", ""), 
+			key.GetString("conectorp\\proxy", "contrasena", ""));
+		m_pTunnelThread->Run(AfxGetMainWnd());
+		m_pTunnelThread->Wait();
+	}
+
 	m_nReintentos= key.GetInt("control", "retry", 3);
 	for( int i=0; ;i++) {
 		clave.Format("conector\\servidor%d", i);
@@ -435,10 +572,19 @@ bool CConector::Cargar(HKEY hKey/*= HKEY_CURRENT_USER*/) {
 			break;
 		CString nombre=CApplicacion::GetAppName();
 		nombre.MakeLower();
-		AddDataBase( key.GetString(clave, "db", nombre), "","", 
-			servidor, key.GetInt(clave, "puerto", MYSQL_PORT), 
-			key.GetInt(clave, "incrustado", 0)
-			);
+		if(m_pTunnelThread) {
+
+			AddDataBase( key.GetString(clave, "db", nombre), "","", 
+				"127.0.0.1", m_pTunnelThread->m_pTunnelSocket->GetListenPort(), 
+				key.GetInt(clave, "incrustado", 0)
+				); // usamos al servidor localhost
+		} else {
+
+			AddDataBase( key.GetString(clave, "db", nombre), "","", 
+				servidor, key.GetInt(clave, "puerto", MYSQL_PORT), 
+				key.GetInt(clave, "incrustado", 0)
+				);
+		}
 	}
 	SetUser(usuario);
 	SetPasswd(contrasena);
@@ -446,5 +592,150 @@ bool CConector::Cargar(HKEY hKey/*= HKEY_CURRENT_USER*/) {
 	m_pArrayDB.SetMainFrame(pMainFrame);
 	m_pArrayDBModal.SetMainFrame(pMainFrame);
 
+	// establecemos el timeout, esto para que abra la conexion al proxy
+	if(m_pThreadTimer==NULL && CMyRegKey::GetProfileInt("control", "keepalive")) {
+		m_pThreadTimer= new CTimerThread(this);
+		m_pThreadTimer->Run();
+	}
+
 	return m_pArrayDB.GetCount()>0;
+}
+
+CTunnelSocketThread::CTunnelSocketThread(int tipo, CString proxy, int puerto, CString destino, int puertodestino, CString usuario, CString contrasena) {
+
+	m_pTunnelSocket= new CTunnelSocket();
+	m_pTunnelSocket->SetProxyDatos(tipo, 
+		proxy, 
+		puerto, 
+		destino,  // servidor de destino
+		puertodestino,  // puerto destino
+		usuario, 
+		contrasena);
+}
+
+CTunnelSocketThread::~CTunnelSocketThread() {
+
+}
+
+bool CTimerThread::Init() {		
+
+	while(IsRunning() && m_pConector) {
+		int keepalive= CMyRegKey::GetProfileInt("control", "keepalive", 10);
+		if(keepalive==0) {
+			if(m_pConector)
+				m_pConector->m_pThreadTimer=NULL;
+			m_pConector=NULL;
+			Kill();
+			break;
+		}
+		if(IsRunning() && m_pConector) {
+			m_pConector->Ping();
+		}
+		Sleep(keepalive*1000);
+	}
+	if(m_pConector)
+		m_pConector->m_pThreadTimer=NULL;
+	return CThreadAuto::Init();
+}
+
+CTimerThread::CTimerThread(CConector *conector) {
+
+	m_pConector= conector;
+}
+
+CTimerThread::~CTimerThread() {
+
+}
+
+
+
+class CAuxSocketDiag : public CDialog
+{
+	DECLARE_DYNAMIC(CAuxSocketDiag)
+public:
+	CAuxSocketDiag(CWnd *parent=NULL);   // standard constructor
+	virtual ~CAuxSocketDiag();
+	CWnd	*m_wndMainWindow;
+	// Dialog Data
+	enum { IDD = IDD_DWEBPASSWORD };
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	DECLARE_MESSAGE_MAP()
+public:
+	virtual BOOL OnInitDialog();
+	void OnWindowPosChanging( WINDOWPOS* lpwndpos );
+	void OnBnClicked();
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
+};
+
+IMPLEMENT_DYNAMIC(CAuxSocketDiag, CDialog)
+
+CAuxSocketDiag::CAuxSocketDiag(CWnd *parent/*=NULL*/)
+: CDialog(CAuxSocketDiag::IDD, NULL)
+{
+	m_wndMainWindow= parent;
+}
+
+CAuxSocketDiag::~CAuxSocketDiag()
+{
+}
+
+void CAuxSocketDiag::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+}
+
+BEGIN_MESSAGE_MAP(CAuxSocketDiag, CDialog)
+	ON_WM_WINDOWPOSCHANGING()
+	ON_BN_CLICKED(IDOK, OnBnClicked)
+	ON_BN_CLICKED(IDCANCEL, OnBnClicked)
+	ON_WM_SETFOCUS()
+END_MESSAGE_MAP()
+
+BOOL CAuxSocketDiag::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+	CWnd wnd;
+	if (wnd.SubclassDlgItem(IDC_EWEBBROWSER, this)) 
+		wnd.DestroyWindow();
+	return TRUE;
+}
+
+void CAuxSocketDiag::OnBnClicked() {}
+void CAuxSocketDiag::OnWindowPosChanging( WINDOWPOS* lpwndpos )
+{
+	lpwndpos->flags &= ~SWP_SHOWWINDOW;
+	CDialog::OnWindowPosChanging(lpwndpos);
+}
+
+void CAuxSocketDiag::OnSetFocus(CWnd* pOldWnd)
+{
+	// m_wndMainWindow->BringWindowToTop();
+	m_wndMainWindow->SetFocus();
+	m_wndMainWindow->SetForegroundWindow();
+}
+
+bool CTunnelSocketThread::Init() {
+
+	int puerto=3306;
+	do {
+		if(puerto==-1)
+			puerto= rand();
+		if(!m_pTunnelSocket->listen(puerto))
+			puerto=-1;
+	} while(puerto==-1);
+
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	CAuxSocketDiag diag((CWnd *)m_pParametro);
+	diag.DoModal();
+	delete m_pTunnelSocket;
+	m_pTunnelSocket=NULL;
+
+	return true;
+}
+
+void CTunnelSocketThread::Wait() {
+	
+	if(m_pTunnelSocket)
+		m_pTunnelSocket->Wait();
 }

@@ -4,11 +4,9 @@
 #include "stdafx.h"
 # include "Componentes.h"
 #include "treelistctrl/TreeListColumnInfo.h"
-# include "memdc.h"
 #include "treelistctrl/TreeListHeaderCtrl.h"
 #include "treelistctrl/TreeListCtrl.h"
 #include "ResourceDLL.h"
-# include "newmenu/newmenu.h"
 
 # include <resource.h>
 
@@ -265,10 +263,10 @@ void CTreeListHeaderCtrl::OnPaint()
 
 	if( m_bOffScreenBuffer )
 	{
-		CMemDC TreeListDC( &dc );
-		if( !TreeListDC.m_hDC) 
+		CMemDC TreeListDC( dc,this );
+		if( !TreeListDC.IsMemDC()) 
 			Default();
-		else DrawCtrl( &TreeListDC );
+		else DrawCtrl( &TreeListDC.GetDC() );
 	}
 	else
 	{
@@ -1188,7 +1186,7 @@ void CTreeListHeaderCtrl::OnRButtonUp(UINT nFlags, CPoint point)
 	if( m_pTreeListCtrl && !m_pTreeListCtrl->m_arColumns.IsEmpty()) {
 		
 		ClientToScreen(&point);
-		CNewMenu menu;
+		CMenu menu;
 		menu.CreatePopupMenu();
 		menu.AppendMenu(MF_STRING, 1202, "&Ajustar Columnas");
 		menu.AppendMenu(MF_STRING, 1201, "A&justar al Contenido");

@@ -9,11 +9,14 @@ class  __CONECTOR_EXPORT___ CDiskID
 {
 protected:
 	CStringArray m_szIDDiscosDuros;
+	CStringArray m_saModelosDiscos;
 public:
 	int GetDiscosDuros();
+	CString GetModelName(int index);
+	CString GetSerialDisco(int index);
 	unsigned int GetSerialNumber(int index=-1);
 protected:
-	void AddDiscoDuro(CString cadena);
+	void AddDiscoDuro(CString modelo, CString cadena);
 	BYTE IdOutCmd [sizeof (SENDCMDOUTPARAMS) + IDENTIFY_BUFFER_SIZE - 1];
 public:
 	CDiskID(void);
@@ -29,6 +32,9 @@ protected:
 	int ReadDrivePortsInWin9X();
 	int ReadIdeDriveAsScsiDriveInNT(void);
 	void PrintIdeInfo (int drive, DWORD diskdata [256]);
-	char *ConvertToString (DWORD diskdata [256], int firstIndex, int lastIndex);
+	char *ConvertToString (DWORD diskdata [256],
+		int firstIndex,
+		int lastIndex,
+		char* buf);
 	long getHardDriveComputerID();
 };

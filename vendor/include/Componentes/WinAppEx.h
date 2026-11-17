@@ -1,18 +1,21 @@
 #pragma once
 
 
-class __COMPONENTES_EXPORT__ CWinAppEx : public CWinApp
+class __COMPONENTES_EXPORT__ CWinAppXP : public CWinAppEx
 {
 	// solo por compatibilidad con versiones anteriores
 	LPARAM	m_mlparamold;
 
-	DECLARE_DYNCREATE( CWinAppEx )
+	DECLARE_DYNCREATE( CWinAppXP )
 
 protected:
-	CWinAppEx( LPCTSTR lpszAppName = NULL );
-	virtual ~CWinAppEx( void );
+	CWinAppXP( LPCTSTR lpszAppName = NULL );
+	virtual ~CWinAppXP( void );
 	
 public:	
+	void  SetSaveState(bool save=false);
+	UINT  m_nAppLook;
+	BOOL  m_bHiColorIcons;
 	BOOL PostInstanceMessage( WPARAM wParam, LPARAM lParam );		
 	BOOL EnableTokenPrivilege( LPCTSTR lpszSystemName, BOOL bEnable = TRUE );
 	
@@ -39,11 +42,11 @@ protected:
 	UINT	m_uMsgCheckInst;
 };
 
-AFX_INLINE CWinAppEx* GetApp( void )
-	{ return STATIC_DOWNCAST( CWinAppEx, AfxGetApp() ); }
+AFX_INLINE CWinAppXP* GetApp( void )
+	{ return STATIC_DOWNCAST( CWinAppXP, AfxGetApp() ); }
 
-AFX_INLINE void CWinAppEx::RegisterShellFileTypes( BOOL bCompat /*FALSE*/ )
+AFX_INLINE void CWinAppXP::RegisterShellFileTypes( BOOL bCompat /*FALSE*/ )
 	{ RegisterShellFileTypesEx( bCompat, TRUE ); }
 
-AFX_INLINE void CWinAppEx::UnregisterShellFileTypes( void) 
+AFX_INLINE void CWinAppXP::UnregisterShellFileTypes( void) 
 	{ RegisterShellFileTypesEx( FALSE, FALSE ); }

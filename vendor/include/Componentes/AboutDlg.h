@@ -1,9 +1,9 @@
 #pragma once
 # include "resource.h"
 #include "newmenu/dialogxp.h"
-# include "HyperLink.h"
 # include "KCSideBannerWnd.h"
 #include "afxwin.h"
+#include <afxcontrolbars.h>     // MFC support for ribbons and control bars
 
 class CAboutDlg : public CDialogXP
 {
@@ -20,7 +20,7 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // Compatibilidad con DDX/DDV
 public:
-	CHyperLink m_SLink;
+	CMFCLinkCtrl m_SLink;
 	CStatic		m_SVersion;
 	virtual BOOL OnInitDialog();
 	// Implementación

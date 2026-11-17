@@ -1,9 +1,12 @@
 #pragma once
-#include "mexcel.h"
+// # include "mexcel.h"
+// # include "BasicExcel.h"
 # include "htmlfile.h"
 # include "conector/conector.h"
-
+# include "mexcel.h"
+# include "BasicExcel.h"
 using namespace miniexcel;
+using namespace YExcel;
 
 class __IOFILE_EXPORT__ CExport
 {
@@ -12,7 +15,9 @@ class __IOFILE_EXPORT__ CExport
 	void			SetTipo( CString Archivo);
 	XmlWriter		*m_pXML;
 	CHtmlFile		*m_pHtml;
-	CMiniExcel		miniexcel;
+	CMiniExcel		m_pMiniExcel;
+	BasicExcel		*m_pBasicExcel;
+	BasicExcelWorksheet* m_pSheet;
 	int				m_nCurrent;
 	ULONG			m_nAgregados;
 	FILE			*m_pFile;
@@ -32,6 +37,7 @@ class __IOFILE_EXPORT__ CExport
 	bool			m_bNumero;
 	void			InitExportacion();
 	CUIntArray		m_uaTipos;
+	bool			m_bUseBasicExcel;
 	// generador de querys
 	void	CreateMarcas();
 	void	CreateUsuarios();
@@ -50,6 +56,8 @@ public:
 	CHtmlFile *GetHtmlFile() {
 		return m_pHtml;
 	}
+	void SetRows(int nMaxRow);
+	void SetBasicExcel(bool basicexcel=true);
 	void SetTipoColumna(int columna, int tipo);
 	static double ConvertToNumero(const char *valor);
 	int			m_nColumna;

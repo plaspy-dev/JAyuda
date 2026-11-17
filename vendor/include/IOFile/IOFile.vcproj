@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\lib"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\Debug"
+			IntermediateDirectory="c:\obj\$(ProjectName)\Debug"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="2"
@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -106,7 +106,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\libr"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\Release"
+			IntermediateDirectory="c:\obj\$(ProjectName)\Release"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="2"
@@ -134,7 +134,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -201,6 +201,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm"
 			>
+			<File
+				RelativePath="..\..\src\IOFile\BasicExcel.cpp"
+				>
+			</File>
 			<File
 				RelativePath="..\..\src\IOFile\Defender.cpp"
 				>
@@ -294,6 +298,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc"
 			>
+			<File
+				RelativePath=".\BasicExcel.h"
+				>
+			</File>
 			<File
 				RelativePath=".\Defender.h"
 				>

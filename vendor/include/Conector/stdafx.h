@@ -52,6 +52,7 @@
 #include <afxtempl.h> 
 #include <afxsock.h>		// MFC socket extensions
 #include <afxdlgs.h>
+#include <afxcontrolbars.h>
 
 
 #ifndef _CONECTOR_DLL_

@@ -16,6 +16,7 @@ CDlgProgreso::CDlgProgreso(CWnd* pParent /*=NULL*/)
 {
 	m_nMaximo=0;
 	m_pConector=NULL;
+	m_bSilent=false;
 }
 
 CDlgProgreso::~CDlgProgreso()
@@ -85,7 +86,12 @@ BOOL CDlgProgreso::OnInitDialog()
 LRESULT CDlgProgreso::OnMySQLMensaje(WPARAM wParam, LPARAM lParam) {
 
 	CMySQLMessage *mess=(CMySQLMessage *)lParam;
-	if(wParam==THREAD_END) {
+	if(wParam==QUERY_ERROR) {
+		if(!m_bSilent) {
+			m_pConector->KillQuery(-1, this);
+			OnCancel();
+		}
+	} else if(wParam==THREAD_END) {
 		int pos= m_PCProgreso.StepIt()+1;
 		if(pos==m_nMaximo) {
 			OnOK();

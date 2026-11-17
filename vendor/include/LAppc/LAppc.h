@@ -20,6 +20,7 @@
 #include "mytime.h"
 # include "XWinVer.h"
 # include "VistaTools.h"
+# include "MiscelaneosEx.h"
 
 
 __LAPPC_EXPORT__ bool RegisterFile(CString file, CString *szMD5=NULL, bool force=false);

@@ -23,6 +23,7 @@
 # include "trialinfo.h"
 # include "Query.h"
 # include "conectorformview.h"
+# include "PropiedadesBar.h"
 
 // CConectorApp
 // See Conector.cpp for the implementation of this class
@@ -42,8 +43,10 @@ public:
 
 __CONECTOR_EXPORT___ void InitAsistente(CBitmap *bmpHeader=NULL,CBitmap *bmpWater=NULL);
 __CONECTOR_EXPORT___ DWORD GetDlgIngreso(bool existe, CStringArray &datos, bool local=false);
-__CONECTOR_EXPORT___ DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, bool local=false);
+__CONECTOR_EXPORT___ DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, CWnd *parent=NULL, bool local=false);
 __CONECTOR_EXPORT___ DWORD GetDlgIngreso(bool existe, CUsuario3 *usuario, bool local=false);
+__CONECTOR_EXPORT___ DWORD GetDlgCambioContrasena(const CString &usuario, const CString &id, const CString &servidor);
+__CONECTOR_EXPORT___ DWORD GetDlgHTMLView(const CString &url, int ancho=-1, int alto=-1);
 __CONECTOR_EXPORT___ DWORD GetDlgDataBases();
 
 #ifndef _CONECTOR_DLL_

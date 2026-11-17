@@ -95,7 +95,7 @@ int CSplitterControl::GetStyle()
 void CSplitterControl::OnPaint() 
 {
 	CPaintDC dc(this); // device context for painting
-	if( dc.m_hDC) {
+	if( !dc.m_hDC) {
 		Default();
 		return;
 	}

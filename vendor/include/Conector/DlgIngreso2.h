@@ -13,6 +13,7 @@ public:
 
 // Dialog Data
 	enum { IDD = IDD_DIALOGCONECTAR };
+	enum { query_permisos=123 };
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -31,10 +32,12 @@ public:
 	CEditXP		m_EContrasena;
 	CButtonXP	m_BOK;
 	CButtonXP	m_BCancelar;
-	CConector	m_pConector;
+	CConector	*m_pConector;
 	CStatic		m_SAyuda;
 	bool		m_bExiste;
+	bool		m_bArchivo;
 	int			m_nAutoNumerico;
+	CMiscelaneosEx m_pPermisos;
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancelar();
 protected:

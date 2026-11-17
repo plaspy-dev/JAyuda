@@ -17,13 +17,13 @@ JAyuda displays a collection of help pages in a desktop window. A topic tree org
 
 - Open the welcome page and browse a topic tree defined in `index.xml`.
 - Search indexed local HTML files and rank results by matching lines.
-- Use Back, Forward, Home and Refresh to move through the guide. This version uses the classic menu and toolbar for help navigation. Its left pane contains the index and search tabs.
+- Use Back, Forward, Home and Refresh to move through the guide. This version uses a ribbon with a Navigation tab for moving between pages. It retains the index and search tabs in the left pane.
 
 ### Requirements
 
 The 2026 reconstruction converted the archived projects for Win32 and added compatibility files in compat/. It prepared the portable settings profiles and the fallback that uses executable metadata. The fictional guide and the local HTTP launcher in examples/ also come from 2026.
 
-Use Visual Studio with Desktop development with C++, Win32 MFC and MSVC v145. The Windows 11 build used Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC 14.51.36231 and Windows SDK 10.0.26100.0. The build targets Win32 with x64 host tools. The archived browser uses MSHTML and the application packages its own Hhelp 1.0.0.1, IOFile 2.0.1.1, LAppc 1.1.0.1, Conector 3.0.0.1 and Componentes 2.1.0.1 from the `libreria1` source snapshot. The default portable edition runs without a serial or `appt.dll`. Each app version keeps an independent Windows profile. The original registration checks remain under `ENABLE_LICENSE_CHECK`. The library sources carry the backup date May 26, 2020 UTC. LAppc 1.1.0.1 supplies the portable application name and resolves help files beside the executable so the viewer can start without its original installation module.
+Use Visual Studio with Desktop development with C++, Win32 MFC and MSVC v145. The Windows 11 build used Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC 14.51.36231 and Windows SDK 10.0.26100.0. The build targets Win32 with x64 host tools. The archived browser uses MSHTML and the application packages its own Hhelp 1.0.0.1, IOFile 2.0.1.1, LAppc 1.1.0.1, Conector 3.0.0.1 and Componentes 2.1.0.1 from the `libreria2` source snapshot. The default portable edition runs without a serial or `appt.dll`. Each app version keeps an independent Windows profile. The original registration checks remain under `ENABLE_LICENSE_CHECK`. The library sources carry the backup date May 26, 2020 UTC. LAppc 1.1.0.1 supplies the portable application name and resolves help files beside the executable so the viewer can start without its original installation module.
 
 The archived Win32 MySQL 5.0.16 client and headers come with the repository under vendor/mysql-sdk/. The viewer links the client through its shared library. The sample guide uses its local HTTP server. The exact archived controls are under vendor/third-party/controls/. Their original notices and hashes are recorded. The demo was verified with Python 3.12.4 and Docker Engine 29.9.2, using a Python 3.12.16 HTTP container.
 
@@ -48,7 +48,7 @@ Select **Ayuda** to open the demonstration guide. The topic index lists **Guía 
 
 ### History
 
-The executable resource identifies this archived version as 1.1.0.1. This version uses the classic menu and toolbar for help navigation. Its left pane contains the index and search tabs. The application source folders carry the backup date January 7, 2020 UTC. The original edit dates are unknown.
+The executable resource identifies this archived version as 2.0.0.1. This version uses a ribbon with a Navigation tab for moving between pages. It retains the index and search tabs in the left pane. The application source folders carry the backup date January 7, 2020 UTC. The original edit dates are unknown.
 
 ### Contributing
 
@@ -80,13 +80,13 @@ JAyuda muestra una colección de páginas de ayuda en una ventana de escritorio.
 
 - Abre la página de bienvenida y recorre un árbol de temas definido en `index.xml`.
 - Busca en archivos HTML locales del índice y ordena los resultados por líneas coincidentes.
-- Usa Atrás, Adelante, Inicio y Actualizar para recorrer la guía. Esta versión usa el menú clásico y la barra de botones para navegar por la ayuda. El panel izquierdo tiene las pestañas de índice y búsqueda.
+- Usa Atrás, Adelante, Inicio y Actualizar para recorrer la guía. Esta versión usa una cinta con la pestaña Navegación para moverse entre páginas. Conserva el índice y la búsqueda en el panel izquierdo.
 
 ### Requisitos
 
 La reconstrucción de 2026 convirtió los proyectos archivados para Win32 y agregó los archivos de compatibilidad de compat/. Preparó los perfiles de preferencias portátiles y la alternativa que usa los metadatos del ejecutable. La guía ficticia y el lanzador HTTP local de examples/ son de 2026.
 
-Usa Visual Studio con Desarrollo para el escritorio con C++, MFC para Win32 y MSVC v145. La compilación en Windows 11 usó Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC 14.51.36231 y Windows SDK 10.0.26100.0. El destino es Win32 con herramientas anfitrionas x64. El navegador histórico usa MSHTML. Se incluyen las bibliotecas propias Hhelp 1.0.0.1, IOFile 2.0.1.1, LAppc 1.1.0.1, Conector 3.0.0.1 y Componentes 2.1.0.1 del respaldo `libreria1`. La edición portátil arranca sin serial ni `appt.dll`. Cada versión guarda su propio perfil de Windows. Las comprobaciones originales quedan bajo `ENABLE_LICENSE_CHECK`. Los fuentes de las bibliotecas llevan la fecha de respaldo del 26 de mayo de 2020 en UTC. LAppc 1.1.0.1 proporciona el nombre portátil de la aplicación y busca la ayuda junto al ejecutable para que el visor arranque sin el módulo de instalación original.
+Usa Visual Studio con Desarrollo para el escritorio con C++, MFC para Win32 y MSVC v145. La compilación en Windows 11 usó Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC 14.51.36231 y Windows SDK 10.0.26100.0. El destino es Win32 con herramientas anfitrionas x64. El navegador histórico usa MSHTML. Se incluyen las bibliotecas propias Hhelp 1.0.0.1, IOFile 2.0.1.1, LAppc 1.1.0.1, Conector 3.0.0.1 y Componentes 2.1.0.1 del respaldo `libreria2`. La edición portátil arranca sin serial ni `appt.dll`. Cada versión guarda su propio perfil de Windows. Las comprobaciones originales quedan bajo `ENABLE_LICENSE_CHECK`. Los fuentes de las bibliotecas llevan la fecha de respaldo del 26 de mayo de 2020 en UTC. LAppc 1.1.0.1 proporciona el nombre portátil de la aplicación y busca la ayuda junto al ejecutable para que el visor arranque sin el módulo de instalación original.
 
 El cliente Win32 MySQL 5.0.16 y sus cabeceras archivadas vienen en vendor/mysql-sdk/. El visor enlaza el cliente mediante su biblioteca. La guía de muestra usa el servidor HTTP local. Los controles archivados exactos están en vendor/third-party/controls/ con sus avisos y hashes. La demo se verificó con Python 3.12.4 y Docker Engine 29.9.2 y un contenedor HTTP con Python 3.12.16.
 
@@ -111,7 +111,7 @@ Selecciona **Ayuda** para abrir la guía de demostración. El índice contiene *
 
 ### Historia
 
-El recurso del ejecutable identifica esta versión del respaldo como 1.1.0.1. Esta versión usa el menú clásico y la barra de botones para navegar por la ayuda. El panel izquierdo tiene las pestañas de índice y búsqueda. Las carpetas de la aplicación llevan la fecha de respaldo del 7 de enero de 2020 en UTC. Las fechas originales de edición se desconocen.
+El recurso del ejecutable identifica esta versión del respaldo como 2.0.0.1. Esta versión usa una cinta con la pestaña Navegación para moverse entre páginas. Conserva el índice y la búsqueda en el panel izquierdo. Las carpetas de la aplicación llevan la fecha de respaldo del 7 de enero de 2020 en UTC. Las fechas originales de edición se desconocen.
 
 ### Contribuir
 

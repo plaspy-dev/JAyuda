@@ -1,18 +1,19 @@
 #pragma once
 
 # include <afxhtml.h>
+# include "Fixhtmlview.h"
 
 // Vista HTML de CHtmlHelpView
 
-class __HHELP_EXPORT__ CHtmlHelpView : public CHtmlView
+class __HHELP_EXPORT__ CHtmlHelpView : public CFixHtmlView
 {
 	DECLARE_DYNCREATE(CHtmlHelpView)
 
 protected:
 	CHtmlHelpView();           // Constructor protegido utilizado por la creación dinámica
 	virtual ~CHtmlHelpView();
-	CToolBarXP		m_wndToolBarNavegador;
 	bool			m_bVisibleToolbar;
+	CString			m_szInitialURL;
 public:
 #ifdef _DEBUG
 	virtual void AssertValid() const;
@@ -35,9 +36,15 @@ public:
 	virtual void OnBeforeNavigate2(LPCTSTR lpszURL, DWORD nFlags, LPCTSTR lpszTargetFrameName, CByteArray& baPostedData, LPCTSTR lpszHeaders, BOOL* pbCancel);
 protected:
 	virtual void OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeactiveView);
-	afx_msg BOOL OnToolTipText(UINT nID, NMHDR* pNMHDR, LRESULT* pResult);
 public:
 	virtual void OnTitleChange(LPCTSTR lpszText);
+	afx_msg void OnDestroy();
+	void OnUpdateAdelante(CCmdUI* pCmdUI);
+	void OnUpdateAtras(CCmdUI* pCmdUI);
+
+public:
+	virtual void OnDocumentComplete(LPCTSTR lpszURL);
+	virtual void OnCommandStateChange(long nCommand, BOOL bEnable);
+	bool m_bCanBack;
+	bool m_bCanForward;
 };
-
-

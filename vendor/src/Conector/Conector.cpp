@@ -9,7 +9,7 @@
 # include "DlgIngreso3.h"
 # include "DlgBases.h"
 # include <ResourceDLL.h>
-
+# include "DlgWebContrasena.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -65,6 +65,30 @@ BOOL CConectorApp::InitInstance()
 	}
 #endif
 	return TRUE;
+}
+
+DWORD GetDlgCambioContrasena(const CString &usuario, const CString &id, const CString &servidor) {
+
+	CWnd *mainWnd= AfxGetMainWnd();
+	CString temp=AfxGetApp()->GetProfileString("control", "appurl", CApplicacion::GetAppName());
+
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	CString url= "";
+	
+	temp.MakeLower();
+
+	url= "http://" + servidor + "/" + temp + "web/contrasena.aspx?usuario=" + usuario + "&id=" + id + "&v=1";
+
+	CDlgWebContrasena dlg(url, mainWnd);
+	return dlg.DoModal();
+}
+
+DWORD GetDlgHTMLView(const CString &url, int ancho/*=-1*/, int alto/*=-1*/) {
+
+	CWnd *mainWnd= AfxGetMainWnd();
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	CDlgWebContrasena dlg(url, mainWnd, ancho, alto);
+	return dlg.DoModal();
 }
 
 void InitAsistente(CBitmap *bmpHeader,CBitmap *bmpWater) {
@@ -124,7 +148,7 @@ DWORD GetDlgIngreso(bool existe, CUsuario3 *usuario, bool local/*=false*/) {
 	return IDCANCEL;
 }
 
-DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, bool local/*=false*/) {
+DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, CWnd *parent/*=NULL*/, bool local/*=false*/) {
 
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 
@@ -144,8 +168,7 @@ DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, bool local/*=false*/) {
 		return IDOK;
 	}
 
-
-	CDlgIngreso2 dlg;
+	CDlgIngreso2 dlg(parent);
 	dlg.m_bExiste=existe;
 	dlg.m_bLocalMachine= local;
 
@@ -161,6 +184,8 @@ DWORD GetDlgIngreso(bool existe, CUsuario2 *usuario, bool local/*=false*/) {
 		usuario->SetData(dlg.m_dwCac);
 		usuario->SetDescripcion(dlg.m_szExtra);
 		usuario->SetAutonumerico(dlg.m_nAutoNumerico);
+		usuario->SetArchivo(dlg.m_bArchivo);
+		usuario->SetPermisos(dlg.m_pPermisos);
 		return IDOK;
 	}
 	return IDCANCEL;

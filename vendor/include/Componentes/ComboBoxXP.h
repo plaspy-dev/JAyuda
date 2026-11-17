@@ -30,14 +30,9 @@ public:
 
 protected:
     afx_msg void OnKillFocus(CWnd* pNewWnd);
-    afx_msg void OnMouseMove(UINT, CPoint);
-    afx_msg void OnMouseOut();
-
-    
 public:
 	afx_msg void OnEnChange();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	afx_msg void OnSetFocus(CWnd* pOldWnd);
 	afx_msg HBRUSH CtlColor(CDC* pDC, UINT nCtlColor);
 	DECLARE_MESSAGE_MAP()
 };
@@ -66,8 +61,7 @@ public:
 
 // Attributes
 protected:
-	CXWinVersion	m_WVersion;
-    int		m_nVisibleLines;
+	int		m_nVisibleLines;
     int		m_nDefaultHeight;
     int		m_nEditHeight;
 	bool	m_bValidateScroll;
@@ -77,7 +71,6 @@ protected:
 	bool	m_bEnable;
 	int		m_nSelOK;
     CComboEditXP m_Edit;
-    CMouseMgr	m_MouseMgr;
 	CXInfoTip	m_pToolTip;
 	CListBoxXP	m_listbox;
 
@@ -213,6 +206,7 @@ public:
 	void HideProgress();
 	void ResetContent(bool cleantext=true);
 	void UpdateSeleccion();
+	void AdjustDropDownWidth();
 
 // Implementation
 public:
@@ -220,23 +214,25 @@ public:
     virtual BOOL PreTranslateMessage(MSG* pMsg);
 	void SetWindowText(LPCTSTR lpszString);
 
+	// sobreescribimos las funciones basicas
+	int AddString(LPCTSTR lpszString);
+	int DeleteString(UINT nIndex);
+	int InsertString(int nIndex, LPCTSTR lpszString);
+
 protected:
 	afx_msg void OnCbnEditupdate();
 	afx_msg virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
     afx_msg UINT OnGetDlgCode();
     afx_msg void OnWindowPosChanging(WINDOWPOS*);
     afx_msg void OnWindowPosChanged(WINDOWPOS*);
-    afx_msg void OnPaint();
     afx_msg void OnSetFocus(CWnd* pOldWnd);
-    afx_msg void OnKillFocus(CWnd* pNewWnd);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     afx_msg void OnMouseOut();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
     
 public:
 	// Text
-	__declspec(property(get=GetText,put=SetText))		CString	Text;
-	void	SetText(const CString &texto);
+	__declspec(property(get=GetText,put=SetWindowText))		CString	Text;
 	CString	GetText();
 
 	// Mensaje
@@ -245,9 +241,8 @@ public:
 	CString  GetMensaje();
 
 	// SelectedIndex
-	__declspec(property(get=GetSelectedIndex,put=SetSelectedIndex))						int	SelectedIndex;
+	__declspec(property(get=GetCurSel,put=SetSelectedIndex))						int	SelectedIndex;
 	void	SetSelectedIndex(int index);
-	int GetSelectedIndex();
 
 	// SelectedData
 	__declspec(property(get=GetSelectedData,put=SetSelectedData))						DWORD	SelectedData;
@@ -258,6 +253,8 @@ public:
 	__declspec(property(get=GetProgressText,put=SetProgressText))		CString	ProgressText;
 	void	SetProgressText(const CString &mensaje);
 	CString  GetProgressText();
+
+	__declspec(property(get=IsWindowEnabled,put=EnableWindow)) BOOL Enable;
 
 	friend CComboEditXP;
 	DECLARE_MESSAGE_MAP()

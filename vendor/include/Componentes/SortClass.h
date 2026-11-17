@@ -4,16 +4,14 @@
 
 class CSortClass
 {
-
 public:
-
-	CSortClass(CMyListCtrl * _pWnd, const int _iCol);
+	CSortClass(CListCtrlXP * _pWnd, const int _iCol);
 	virtual ~CSortClass();
 	void Sort(bool bAsc, int tipo);
 	static int CALLBACK Compare(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
 protected:
-	CMyListCtrl *pWnd;
+	CListCtrlXP *pWnd;
 	CVListCtrl  *vpWnd;
 	struct CSortItem
 	{

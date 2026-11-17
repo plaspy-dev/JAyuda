@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\lib"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\Debug"
+			IntermediateDirectory="c:\obj\$(ProjectName)\Debug"
 			ConfigurationType="2"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -106,7 +106,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\libr"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\Release"
+			IntermediateDirectory="c:\obj\$(ProjectName)\Release"
 			ConfigurationType="2"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -133,7 +133,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -205,7 +205,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\Conector\AsyncProxySocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\Conector\BienvenidoPP.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\Conector\CBase64Coding.cpp"
 				>
 			</File>
 			<File
@@ -261,6 +269,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PropiedadesBar.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\Conector\Query.cpp"
 				>
 			</File>
@@ -297,6 +309,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\Conector\TunnelSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\Conector\Usuario.cpp"
 				>
 			</File>
@@ -322,7 +338,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AsyncProxySocket.h"
+				>
+			</File>
+			<File
 				RelativePath=".\BienvenidoPP.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CBase64Coding.h"
 				>
 			</File>
 			<File
@@ -366,6 +390,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PropiedadesBar.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Query.h"
 				>
 			</File>
@@ -403,6 +431,10 @@
 			</File>
 			<File
 				RelativePath=".\TrialInfo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TunnelSocket.h"
 				>
 			</File>
 			<File

@@ -131,6 +131,7 @@
     <ClCompile Include="..\..\src\HHelp\HtmlHelpView.cpp" />
     <ClCompile Include="..\..\src\HHelp\stdafx.cpp" />
     <ClCompile Include="..\..\src\HHelp\ThreadSearch.cpp" />
+    <ClCompile Include="FixHtmlView.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Hhelp.def" />
@@ -139,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="DlgIndex.h" />
     <ClInclude Include="DlgSearchHelp.h" />
+    <ClInclude Include="FixHtmlView.h" />
     <ClInclude Include="FormHelp.h" />
     <ClInclude Include="HelpBar.h" />
     <ClInclude Include="Hhelp.h" />
@@ -148,10 +150,12 @@
     <ClInclude Include="ThreadSearch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Hhelp.rc" />
+    <Image Include="res\grande.bmp" />
+    <Image Include="res\pequeno.bmp" />
+    <Image Include="res\toolbar1.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\toolbar1.bmp" />
+    <ResourceCompile Include="Hhelp.rc" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

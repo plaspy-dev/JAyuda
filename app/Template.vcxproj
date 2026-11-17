@@ -151,6 +151,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\asistente.bmp" />
+    <Image Include="res\buttons.bmp" />
+    <Image Include="res\filelarge.bmp" />
+    <Image Include="res\filesmall.bmp" />
     <Image Include="res\loading\loading0001.bmp" />
     <Image Include="res\loading\loading0002.bmp" />
     <Image Include="res\loading\loading0003.bmp" />
@@ -162,9 +165,12 @@
     <Image Include="res\loading\loading0009.bmp" />
     <Image Include="res\loading\loading0010.bmp" />
     <Image Include="res\loading\loading0011.bmp" />
+    <Image Include="res\main.bmp" />
     <Image Include="res\Template.ico" />
     <Image Include="res\TemplateDoc.ico" />
     <Image Include="res\Toolbar.bmp" />
+    <Image Include="res\writelarge.bmp" />
+    <Image Include="res\writesmall.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Template.rc" />

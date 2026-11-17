@@ -51,6 +51,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <afxsock.h>		// MFC socket extensions
+#include <afxcontrolbars.h>     // MFC support for ribbons and control bars
 
 #ifndef _IOFILE_DLL_
 	#define _IOFILE_DLL_

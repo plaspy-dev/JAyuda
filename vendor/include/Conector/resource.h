@@ -53,6 +53,12 @@
 #define IDC_STATICPRIMERO               1034
 #define IDC_STATICSEGUNDO               1035
 #define IDC_EDITREINTENTOS              1036
+#define IDC_SFINPROXY                   1037
+#define IDC_CPROXY                      1038
+#define IDC_EDIT2                       1043
+#define IDC_EKEEPALIVE                  1043
+#define IDC_EKEEPALIVE2                 1044
+#define IDC_ELECTURATIMEOUT             1044
 #define IDC_STATICAYUDA                 1050
 #define IDC_EDITSERVIDOR                1052
 #define IDC_STATICUSUARIO               1086
@@ -64,7 +70,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        1005
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1032
+#define _APS_NEXT_CONTROL_VALUE         1044
 #define _APS_NEXT_SYMED_VALUE           1008
 #endif
 #endif

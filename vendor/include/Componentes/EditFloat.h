@@ -14,6 +14,7 @@
 
 class __COMPONENTES_EXPORT__ CEditFloat : public CEditXP
 {
+	DECLARE_DYNAMIC(CEditFloat)
 // Construction
 public:
 	//***********************************************************************

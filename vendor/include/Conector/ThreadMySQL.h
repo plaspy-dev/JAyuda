@@ -7,10 +7,8 @@ class CConector;
 class CThreadMySQL : public CThreadAuto
 {
 private:
-
 	bool			Init();
 	CArrayDB		*m_pArrayDB;
-	virtual bool	Kill(bool wait=false);
 public:
 	CThreadMySQL(CThreadMySQL *threadOld=NULL);
 	~CThreadMySQL();

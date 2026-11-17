@@ -62,14 +62,12 @@ BOOL CComboBoxXP::Create (DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UIN
         return false;
     }
     SetFont (CFont::FromHandle ((HFONT)::GetStockObject (DEFAULT_GUI_FONT)));
-    m_MouseMgr.Init (m_hWnd);
 
     HWND hEdit = ::GetWindow (m_hWnd, GW_CHILD);
 
     if ( hEdit != NULL )
     {
         m_Edit.SubclassWindow (hEdit);
-		m_Edit.DrawBordes(false);
 		m_Edit.SetReadOnly(!m_bEnable);
     }
 
@@ -244,12 +242,10 @@ void CComboBoxXP::LoadDataFromXML( CString Archivo, bool reset) {
 void CComboBoxXP::PreSubclassWindow ()
 {
 	FUNCTION_STACK_TRACE("FFFFE01A");
-    m_MouseMgr.Init (m_hWnd);
     HWND hEdit = ::GetWindow (GetSafeHwnd(), GW_CHILD);
     if ( hEdit != NULL )
     {
         m_Edit.SubclassWindow (hEdit);
-		m_Edit.DrawBordes(false);
     }
     CWindowRect rc (this);
     SetWindowPos (NULL, 0, 0, rc.Width(), 100, SWP_NOMOVE|SWP_NOZORDER);
@@ -262,9 +258,7 @@ BEGIN_MESSAGE_MAP(CComboBoxXP, CComboBox)
     ON_WM_GETDLGCODE()
     ON_WM_WINDOWPOSCHANGING()
     ON_WM_WINDOWPOSCHANGED()
-    ON_WM_PAINT()
     ON_WM_SETFOCUS()
-    ON_WM_KILLFOCUS()
     ON_WM_MOUSEMOVE()
     ON_WM_MOUSEOUT()
 	ON_WM_CTLCOLOR()
@@ -399,60 +393,6 @@ void CComboBoxXP::OnWindowPosChanged (WINDOWPOS* pWndPos)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CComboBoxXP::OnPaint ()
-{
-	Default();
-	if(m_WVersion.IsVistaorLater()) 
-		return;
-
-	CClientRect rc (this);
-	CRect rcBtn (rc.right-::GetSystemMetrics (SM_CXHTHUMB), rc.top, rc.right, rc.bottom);
-
-	ValidateRect (rcBtn);
-
-	
-	CClientDC cDC (this);
-	if(!cDC.m_hDC)
-		return;
-	DWORD wStyle = DB_FLAT|DB_DOWN|(m_bEnable? DB_ENABLED : DB_DISABLED);
-	bool bInToolbar = ::ChildOfDockedToolbar (this);
-	bool bDropped = DefWindowProc (CB_GETDROPPEDSTATE, 0, 0L) != 0;
-	bool bFocus = (::GetFocus() == m_hWnd || ::GetParent (::GetFocus()) == m_hWnd); // && bInToolbar;
-
-	if ( !bInToolbar )
-	{
-		wStyle |= DB_BORDER;
-	}
-	if ( bFocus || m_MouseMgr.MouseOver() )
-	{
-		wStyle |= DB_OVER;
-	}
-	if ( bDropped )
-	{
-		wStyle |= DB_OVER|DB_PRESSED;
-	}
-	CDrawButton (wStyle, rcBtn).Draw (&cDC);
-	CPenDC pen (cDC, ::GetSysColor ((( bFocus || bDropped || m_MouseMgr.MouseOver() ) && m_bEnable)
-		? COLOR_HIGHLIGHT
-		: (bInToolbar ? COLOR_WINDOW : COLOR_3DSHADOW)));
-
-	cDC.SelectObject (::GetStockObject (NULL_BRUSH));
-	cDC.Rectangle (rc);
-
-	pen.Color (::GetSysColor (m_bEnable ? COLOR_WINDOW : COLOR_3DFACE));
-	rc.InflateRect (-1, -1);
-	rc.right -= ::GetSystemMetrics (SM_CXHTHUMB);
-	cDC.Rectangle (rc);
-	cDC.MoveTo (rc.right, rc.top);
-	cDC.LineTo (rc.right, rc.bottom);
-	if( !m_bEnable && bFocus) {
-		rc.InflateRect(1,1);
-		pen.Color(::GetSysColor(COLOR_HIGHLIGHT));
-		cDC.Rectangle(rc);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
 void CComboBoxXP::OnSetFocus (CWnd* pOldWnd)
 {
 	FUNCTION_STACK_TRACE("FFFFE020");
@@ -464,14 +404,6 @@ void CComboBoxXP::OnSetFocus (CWnd* pOldWnd)
     {
         Invalidate();
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void CComboBoxXP::OnKillFocus (CWnd* pNewWnd)
-{
-	FUNCTION_STACK_TRACE("FFFFE021");
-    CComboBox::OnKillFocus (pNewWnd);
-    Invalidate();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -513,50 +445,21 @@ void CComboBoxXP::OnMouseMove (UINT nFlags, CPoint point)
 		m_pToolTip.Hide();
 	}
 	CComboBox::OnMouseMove(nFlags, point);
-    m_MouseMgr.OnMouseMove();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void CComboBoxXP::OnMouseOut ()
 {
-	FUNCTION_STACK_TRACE("FFFFE023");
 	m_pToolTip.Hide();
-    m_MouseMgr.OnMouseOut();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CComboEditXP, CEditXP)
-    ON_WM_KILLFOCUS()
-    ON_WM_MOUSEMOVE()
-    ON_WM_MOUSEOUT()
-	ON_CONTROL_REFLECT(EN_CHANGE, OnEnChange)
-	ON_WM_SETFOCUS()
+    ON_CONTROL_REFLECT(EN_CHANGE, OnEnChange)
 	ON_WM_CTLCOLOR_REFLECT()
 END_MESSAGE_MAP()
 
 ///////////////////////////////////////////////////////////////////////////////
-void CComboEditXP::OnKillFocus (CWnd* pNewWnd)
-{
-	FUNCTION_STACK_TRACE("FFFFE024");
-    CEditXP::OnKillFocus (pNewWnd);
-	GetComboBox().Invalidate();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void CComboEditXP::OnMouseMove (UINT, CPoint)
-{
-	FUNCTION_STACK_TRACE("FFFFE025");
-    Default();
-    GetComboBox().m_MouseMgr.OnMouseMove (m_hWnd);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void CComboEditXP::OnMouseOut ()
-{
-	FUNCTION_STACK_TRACE("FFFFE026");
-    GetComboBox().m_MouseMgr.OnMouseOut (m_hWnd);
-}
 
 BOOL CComboBoxXP::OnCommand(WPARAM wParam, LPARAM lParam)
 {
@@ -583,18 +486,6 @@ void CComboBoxXP::OnCbnEditupdate()
 		WORD dEnd   = HIWORD(dwCurSel);
 
 		int seleccion= FindStringExact(-1, str);
-//#ifdef  _DEBUG
-//		CString temporal;
-//		static int contador=0;
-//		if(seleccion==-1) { 
-//			temporal.Format("Sin autocompletado seleccion actual %d, %d\nCadena '%s' %d\n",seleccion,contador++,str, GetCurSel());
-//		} else {
-//			CString texto;
-//			GetLBText(seleccion,texto);
-//			temporal.Format("Sin autocompletado seleccion actual %d, %s\nCadena '%s' %d\n",seleccion,texto,str, GetCurSel());
-//		}
-//		TRACE(temporal);
-//#endif
 		SetCurSel(seleccion);
 		GetParent()->PostMessage(WM_REALUPDATECOMBO,GetDlgCtrlID(), seleccion);
 		GetParent()->PostMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_SELCHANGE), (LPARAM) m_hWnd);
@@ -623,19 +514,6 @@ void CComboBoxXP::OnCbnEditupdate()
   GetParent()->PostMessage(WM_REALUPDATECOMBO,GetDlgCtrlID(), seleccion);
   GetParent()->PostMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_SELCHANGE), (LPARAM) m_hWnd);
 
-//#ifdef  _DEBUG
-//  CString temporal;
-//  static int contador=0;
-//  if(seleccion==-1) { 
-//	  temporal.Format("seleccion actual %d, %d\nCadena '%s' %d\n",seleccion,contador++,str, GetCurSel());
-//  } else {
-//	  CString texto;
-//	  GetLBText(seleccion,texto);
-//	  temporal.Format("seleccion actual %d, %s\nCadena '%s' %d\n",seleccion,texto,str, GetCurSel());
-//  }
-//  TRACE(temporal);
-//#endif
-  
   if( m_bShowCombo) {
 	  ShowDropDown(seleccion!=CB_ERR);
 	  SetCursor(LoadCursor(NULL, IDC_ARROW));
@@ -651,16 +529,6 @@ void CComboBoxXP::OnCbnEditupdate()
 	  SetEditSel(dStart, dEnd);
   else
 	  SetEditSel(nLength, -1);
-//#ifdef  _DEBUG
-//  if(seleccion==-1) { 
-//	  temporal.Format("despues seleccion actual %d, %d\nCadena '%s' %d\n",seleccion,contador++,str, GetCurSel());
-//  } else {
-//	  CString texto;
-//	  GetLBText(seleccion,texto);
-//	  temporal.Format("despues seleccion actual %d, %s\nCadena '%s' %d\n",seleccion,texto,str, GetCurSel());
-//  }
-//  TRACE(temporal);
-//#endif
 }
 
 void CComboEditXP::OnEnChange()
@@ -672,33 +540,7 @@ void CComboEditXP::OnEnChange()
 BOOL CComboEditXP::PreTranslateMessage(MSG* pMsg)
 {
 	GetComboBox().m_pToolTip.RelayEvent(pMsg);
-	if( pMsg->message==WM_KEYDOWN) {
-		switch( pMsg->wParam) {
-			case VK_LEFT:
-				{
-					int x, y;
-					GetSel(x, y);
-					if( x==y && x==0) 
-						GetComboBox().GetParent()->GetNextDlgTabItem(this, true)->SetFocus();
-				}
-				break;
-			case VK_RIGHT:
-				{
-					int x, y;
-					GetSel(x, y);
-					if( x==y && x==GetWindowTextLength()) 
-						GetComboBox().GetParent()->GetNextDlgTabItem(this, false)->SetFocus();
-				}
-				break;
-		}
-	}
 	return CEditXP::PreTranslateMessage(pMsg);
-}
-
-void CComboEditXP::OnSetFocus(CWnd* pOldWnd)
-{
-	CEditXP::OnSetFocus(pOldWnd);
-	GetComboBox().Invalidate();
 }
 
 HBRUSH CComboEditXP::CtlColor(CDC* pDC, UINT nCtlColor)
@@ -719,10 +561,6 @@ void CComboBoxXP::SetWindowText(LPCTSTR lpszString) {
 		Mensaje= Mensaje;
 }
 // Text
-void CComboBoxXP::SetText(const CString &texto) {
-
-	SetWindowText(texto);
-}
 
 CString	CComboBoxXP::GetText() {
 
@@ -748,11 +586,6 @@ void CComboBoxXP::SetSelectedIndex(int index) {
 	SetCurSel(index);
 	GetParent()->SendMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(), CBN_SELCHANGE), (LPARAM) m_hWnd);
 	GetParent()->SendMessage(WM_REALUPDATECOMBO,GetDlgCtrlID(), index);
-}
-
-int CComboBoxXP::GetSelectedIndex() {
-
-	return GetCurSel();
 }
 
 void CComboBoxXP::SetSelectedData(DWORD data) {
@@ -850,6 +683,27 @@ void CComboBoxXP::ResetContent(bool cleantext/*=true*/) {
 		Text= texto;
 		SetEditSel(LOWORD(dwCurSel), HIWORD(dwCurSel));
 	}
+	KillTimer(2);
+	SetTimer(2, 1000, NULL);
+}
+
+int CComboBoxXP::AddString(LPCTSTR lpszString) {
+	int resultado= CComboBox::AddString(lpszString);
+	KillTimer(2);
+	SetTimer(2, 1000, NULL);
+	return resultado;
+}
+int CComboBoxXP::DeleteString(UINT nIndex) {
+	int resultado= CComboBox::DeleteString(nIndex);
+	KillTimer(2);
+	SetTimer(2, 1000, NULL);
+	return resultado;
+}
+int CComboBoxXP::InsertString(int nIndex, LPCTSTR lpszString) {
+	int resultado= CComboBox::InsertString(nIndex, lpszString);
+	KillTimer(2);
+	SetTimer(2, 1000, NULL);
+	return resultado;
 }
 
 void CComboBoxXP::UpdateSeleccion() {
@@ -882,6 +736,7 @@ HBRUSH CComboBoxXP::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 void CComboBoxXP::OnDestroy()
 {
+	KillTimer(2);
 	if (m_listbox.GetSafeHwnd() != NULL) {
 		m_listbox.UnsubclassWindow();
 		m_listbox.OnDestroy();
@@ -906,6 +761,9 @@ void CComboBoxXP::OnTimer(UINT_PTR nIDEvent)
 			KillTimer(nIDEvent);
 			m_pToolTip.Hide();
 		}
+	} else if(nIDEvent==2) {
+		KillTimer(2);
+		AdjustDropDownWidth();
 	}
 	CComboBox::OnTimer(nIDEvent);
 }
@@ -924,5 +782,45 @@ BOOL CComboBoxXP::OnChildNotify(UINT message, WPARAM wParam, LPARAM lParam, LRES
 		}
 	}
 	return CComboBox::OnChildNotify(message, wParam, lParam, pLResult);
-	// return notify;
+}
+
+void CComboBoxXP::AdjustDropDownWidth() {
+
+	CString    str;
+	CSize      sz;
+	int        dx = 0;
+	TEXTMETRIC tm;
+	CDC*       pDC = GetDC();
+	CFont*     pFont = GetFont();
+
+	// Select the listbox font, save the old font
+	CFont* pOldFont = pDC->SelectObject(pFont);
+	// Get the text metrics for avg char width
+	pDC->GetTextMetrics(&tm);
+
+	for (int i = 0; i < GetCount(); i++)
+	{
+	   GetLBText(i, str);
+	   sz = pDC->GetTextExtent(str);
+
+	   // Add the avg width to prevent clipping
+	   sz.cx += tm.tmAveCharWidth;
+
+	   if (sz.cx > dx)
+		  dx = sz.cx;
+	}
+	// Select the old font back into the DC
+	pDC->SelectObject(pOldFont);
+	ReleaseDC(pDC);
+
+	// Adjust the width for the vertical scroll bar and the left and right border.
+	dx += ::GetSystemMetrics(SM_CXVSCROLL) + 2*::GetSystemMetrics(SM_CXEDGE);
+	
+	CRect rect;
+	GetWindowRect(rect);
+	if(dx<rect.Width()) 
+		dx= rect.Width();
+
+	// Set the width of the list box so that every item is completely visible.
+	SetDroppedWidth(dx);
 }

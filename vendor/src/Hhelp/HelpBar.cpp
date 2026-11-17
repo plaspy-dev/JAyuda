@@ -31,7 +31,7 @@ int CHelpBar::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CHelpBar::ScrollOn() { // on show
 
-	CGuiControlBar::ScrollOn();
+	// CGuiControlBar::ScrollOn();
 	// todo aqui
 }
 void CHelpBar::OnSize(UINT nType, int cx, int cy)

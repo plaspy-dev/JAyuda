@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\IOFile\BasicExcel.cpp" />
     <ClCompile Include="..\..\src\IOFile\Defender.cpp" />
     <ClCompile Include="..\..\src\IOFile\DlgElementos.cpp" />
     <ClCompile Include="..\..\src\IOFile\DlgExportar.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="DlgProgreso.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasicExcel.h" />
     <ClInclude Include="Defender.h" />
     <ClInclude Include="DlgElementos.h" />
     <ClInclude Include="DlgExportar.h" />

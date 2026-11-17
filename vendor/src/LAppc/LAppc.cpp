@@ -95,11 +95,13 @@ bool RegisterFile(CString file, CString *szMD5, bool force) {
 				DeleteFile(filecrc);
 			return force;
 		}
-		if( keycu.WriteString("llaves", md5, file) && myKey.WriteString("llaves", md5, file)) {
+		if( myKey.WriteString("llaves", md5, file) && keycu.WriteString("llaves", md5, file)) {
 			if( !force) 
 				DeleteFile(filecrc);
 			return true;
 		}
+		// se encontro el archivo pero no se pudo escribir en el registro.
+		return true;
 	} else archivo.Close();
 	return false;
 }

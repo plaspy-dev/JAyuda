@@ -125,7 +125,7 @@ BEGIN
     LTEXT           "Serial",IDC_STATIC,43,91,18,8
     RTEXT           "Bienvenido a SDGFinger control de acceso.\nA continuación ingrese el número de serial del producto\n si no conoce este número consulte a su proveedor.",IDC_STITULO,82,21,185,27
     PUSHBUTTON      "Demo",IDC_BPROBAR,217,125,50,14
-    LTEXT           "Obtener Serial",IDC_SLINK,97,111,47,8
+    PUSHBUTTON      "Obtener Serial",IDC_SLINK,97,111,47,8
     LTEXT           "",IDC_SLOGO,7,7,79,61
     PUSHBUTTON      ">",IDC_BNEXT,252,72,15,14
 END

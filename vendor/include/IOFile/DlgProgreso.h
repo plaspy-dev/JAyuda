@@ -29,6 +29,7 @@ public:
 	CStringArray	*m_pMensajes;
 	CStringArray	*m_pQuerys;
 	CString			m_szTitulo;
+	bool	m_bSilent;
 public:
 	CStatic m_SProgreso;
 	CConector *m_pConector;

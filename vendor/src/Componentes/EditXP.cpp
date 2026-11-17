@@ -5,7 +5,6 @@
 # include "Componentes.h"
 #include "EditXP.h"
 # include "Draw.h"
-# include "newmenu/newmenu.h"
 
 // CEditXP
 
@@ -13,13 +12,7 @@ IMPLEMENT_DYNAMIC(CEditXP, CEdit)
 CEditXP::CEditXP()
 {	
 	FUNCTION_STACK_TRACE("FFFFE03C");
-	m_crOver= ::GetSysColor(COLOR_INACTIVECAPTION);
-	m_crFocus=  ::GetSysColor( COLOR_HIGHLIGHT);
-	m_crDefault=  ::GetSysColor(COLOR_3DSHADOW);
-	m_bSalto= AfxGetApp()->GetProfileInt("editctrl", "sfinal", 0)==1;
-	m_bSaltoEx= AfxGetApp()->GetProfileInt("editctrl", "sflechas", 1)==1;
 	m_hlFont= m_hAlto= 0;
-	m_bDrawBordes= AfxGetApp()->GetProfileInt("editctrl", "bordes", 1)==1;
 	m_nMax=0;
 	m_nCurrent=0;
 	m_nStep=1;
@@ -34,13 +27,9 @@ CEditXP::~CEditXP()
 
 BEGIN_MESSAGE_MAP(CEditXP, CEdit)
 	ON_WM_PAINT()
-	ON_WM_MOUSEMOVE()
-    ON_WM_MOUSEOUT()
-	ON_WM_SYSCOLORCHANGE()
 	ON_MESSAGE(WM_PASTE, OnPaste)
 	ON_WM_CONTEXTMENU()	
 	ON_WM_SETFOCUS()
-	ON_WM_DESTROY()
 	ON_WM_KILLFOCUS()
 	ON_WM_CHAR()
 	ON_WM_CTLCOLOR_REFLECT()
@@ -51,77 +40,15 @@ END_MESSAGE_MAP()
 
 // CEditXP message handlers
 
-void CEditXP::OnSysColorChange() 
-{
-	FUNCTION_STACK_TRACE("FFFFE03D");
-	CEdit::OnSysColorChange();
-
-	m_crOver= ::GetSysColor(COLOR_INACTIVECAPTION);
-	m_crFocus=  ::GetSysColor( COLOR_HIGHLIGHT);
-	m_crDefault=  ::GetSysColor(COLOR_3DSHADOW);
-}
-
-void CEditXP::DrawBordes(bool draw) {
-	m_bDrawBordes= draw;
-}
-
 void CEditXP::PreSubclassWindow()
 {	
 	FUNCTION_STACK_TRACE("FFFFE03E");
-	m_MouseMgr.Init(m_hWnd);
 	UpdateIcon();
-	// m_Tip.Create(this);
-}
-
-void CEditXP::DrawBordes() {
-
-	if(m_WVersion.IsVistaorLater())
-		return;
-	FUNCTION_STACK_TRACE("FFFFE03F");
-	CRect rect;
-	GetWindowRect(&rect);
-	ScreenToClient(&rect);
-	DWORD dwExStyle=GetStyle();
-	COLORREF crDefault= m_crDefault;
-
-	CClientDC cDC (this);
-	if(!cDC.m_hDC)
-		return;
-	CPenDC pen( cDC, GetSysColor(COLOR_3DFACE));
-	cDC.SelectObject(::GetStockObject (NULL_BRUSH));
-
-	// borramos los bordes
-
-	int nBorderWidth = 2;
-
-	if (dwExStyle & WS_EX_DLGMODALFRAME) 
-		nBorderWidth += 3;
-	if (dwExStyle & WS_EX_CLIENTEDGE) 
-		nBorderWidth += 2;
-	if (dwExStyle & WS_EX_STATICEDGE && !(dwExStyle & WS_EX_DLGMODALFRAME)) 
-		nBorderWidth ++;
-	rect.InflateRect(1,1);
-	for (int nLoop = 0; nLoop <nBorderWidth; nLoop++) {
-
-		cDC.Rectangle(rect);
-		rect.DeflateRect(1, 1);
-	}
-	rect.DeflateRect(1,1);
-
-	if( ::GetFocus()==m_hWnd)
-		crDefault= m_crFocus;
-	else if( m_MouseMgr.MouseOver())
-		crDefault= m_crOver;
-	pen.Color( crDefault);
-	rect.DeflateRect(-1, -1);
-	cDC.Rectangle(rect);
 }
 
 void CEditXP::OnPaint()
 {
 	Default();
-	if(m_bDrawBordes)
-		DrawBordes();
 	if(m_hIcon) {
 
 		CClientDC dc(this);
@@ -146,21 +73,6 @@ void CEditXP::OnPaint()
 		// Drawing the icon
 		::DrawIconEx( dc.m_hDC, rect.left, rect.top, m_hIcon, width, height, 0, NULL, DI_NORMAL );
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void CEditXP::OnMouseMove (UINT, CPoint)
-{
-	FUNCTION_STACK_TRACE("FFFFE040");
-    Default();
-    m_MouseMgr.OnMouseMove();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void CEditXP::OnMouseOut ()
-{
-	FUNCTION_STACK_TRACE("FFFFE041");
-    m_MouseMgr.OnMouseOut();
 }
 
 LRESULT CEditXP::OnPaste(WPARAM Wparam, LPARAM LParam) 
@@ -204,6 +116,19 @@ LRESULT CEditXP::OnPaste(WPARAM Wparam, LPARAM LParam)
    return 0;
 }
 
+inline CString GetShortMenu(UINT id)
+{
+	FUNCTION_STACK_TRACE("FFFFE043");
+	CString str;
+	str.LoadString(id);
+	int nIndex = str.ReverseFind(_T('\n'));
+	if(nIndex!=-1)
+	{
+		str=str.Mid(nIndex+1);
+	}
+	return str;
+}
+
 void CEditXP::OnContextMenu(CWnd* pWnd, CPoint point)
 {
 	FUNCTION_STACK_TRACE("FFFFE044");
@@ -218,8 +143,7 @@ void CEditXP::OnContextMenu(CWnd* pWnd, CPoint point)
   }
   SetFocus();
 
-  CNewMenu menu;
-  //CMenu menu;
+  CMenu menu;
   menu.CreatePopupMenu();
   menu.InsertMenu(0, MF_BYPOSITION , ID_EDIT_UNDO, GetShortMenu(ID_EDIT_UNDO));
   menu.InsertMenu(1, MF_BYPOSITION|MF_SEPARATOR);
@@ -229,7 +153,9 @@ void CEditXP::OnContextMenu(CWnd* pWnd, CPoint point)
   menu.InsertMenu(5, MF_BYPOSITION , ID_EDIT_PASTE,  GetShortMenu(ID_EDIT_PASTE));
   menu.InsertMenu(6, MF_BYPOSITION|MF_SEPARATOR);
   menu.InsertMenu(7, MF_BYPOSITION , ID_EDIT_SELECT_ALL,GetShortMenu(ID_EDIT_SELECT_ALL));
-  menu.TrackPopupMenu( TPM_RIGHTBUTTON, point.x, point.y, AfxGetMainWnd());
+
+  CMFCPopupMenu* pPopupMenu = new CMFCPopupMenu();
+  pPopupMenu->Create(AfxGetMainWnd(), point.x, point.y, menu, true, true);
 }
 
 void CEditXP::InitMultiline() {
@@ -296,7 +222,7 @@ void CEditXP::ValidarTamano() {
 
 			// movemos el cuadro de dialogo
 			MoveWindow(rectEdit);
-			parent->RedrawWindow();
+			parent->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE  | RDW_ALLCHILDREN);
 			if(parent->IsKindOf(RUNTIME_CLASS(CFormView))) {
 				RecalculateScroll((CFormView *)parent);
 			} else if(parent->IsKindOf(RUNTIME_CLASS(CDialog))) {
@@ -312,56 +238,6 @@ BOOL CEditXP::PreTranslateMessage(MSG* pMsg)
 {
 	if(::IsWindow(m_Tip))
 		m_Tip.RelayEvent(pMsg);
-	if( pMsg->message==WM_KEYUP) {
-
-		if( pMsg->wParam==VK_ESCAPE) 
-			if( !(GetParent()->IsKindOf(RUNTIME_CLASS(CComboBox)) || GetParent()->IsKindOf(RUNTIME_CLASS(CListCtrl)))) {
-				CWnd *elemento = GetParent()->GetNextDlgTabItem(this, true);
-				elemento->SetFocus();
-				if( elemento->IsKindOf(RUNTIME_CLASS(CEdit)))
-					((CEdit *)elemento)->SetSel(0, ((CEdit *)elemento)->GetWindowTextLength());
-			}
-	}
-	if( m_bSalto && pMsg->message==WM_KEYUP) {
-		int x,y;
-		GetSel(x, y);
-		if( x==y) {
-			y= GetWindowTextLength();
-			if( x==y && x==GetLimitText())
-				GetParent()->GetNextDlgTabItem(this, FALSE)->SetFocus();
-		}
-	}
-	if(m_bSaltoEx && pMsg->message==WM_KEYDOWN) {
-
-		bool up=false;
-		int x,y;
-		GetSel(x, y);
-		switch( pMsg->wParam) {
-			case VK_LEFT:
-				if(x || x!=y)
-					x=-1;
-				up=true;
-				break;
-			case VK_RIGHT:
-				if( x!=GetWindowTextLength() || x!=y)
-					x=-1;
-				break;
-			case VK_UP:
-				up=true;
-				break;
-			case VK_DOWN:
-				break;
-			default:
-				x=-1;
-		}
-		if( x!=-1) {
-			GetParent()->GetNextDlgTabItem(this, up)->SetFocus();
-			if( m_hAlto) {
-				if( (pMsg->wParam==VK_UP && x<=LineLength(0))  || ( pMsg->wParam==VK_DOWN && y==GetWindowTextLength()))
-					return true;
-			}
-		}
-	} 
 	if( m_hAlto) {
 		bool salir=false;
 		ASSERT(GetStyle() & ES_MULTILINE);
@@ -393,17 +269,12 @@ void CEditXP::OnSetFocus(CWnd* pOldWnd)
 {
 	CString temp;
 	CEdit::GetWindowText(temp);
-	if( temp==m_szMensaje) {
+	if( temp==m_szMensaje) 
 		CEdit::SetWindowText("");
-	}
 	CEdit::OnSetFocus(pOldWnd);
 	ValidateScroll(this);
 }
 
-void CEditXP::OnDestroy()
-{
-	CEdit::OnDestroy();
-}
 
 void CEditXP::SetToolTip(CString texto, CString titulo) {
 
@@ -498,11 +369,6 @@ HBRUSH CEditXP::CtlColor(CDC* pDC, UINT nCtlColor)
 }
 
 // propiedades
-void CEditXP::SetText(const CString &texto) {
-
-	SetWindowText(texto);
-}
-
 CString CEditXP::GetText() {
 
 	CString texto;

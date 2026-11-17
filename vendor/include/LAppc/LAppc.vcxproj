@@ -134,6 +134,7 @@
     <ClCompile Include="..\..\src\LAppc\Crc32Static.cpp" />
     <ClCompile Include="..\..\src\LAppc\LAppc.cpp" />
     <ClCompile Include="..\..\src\LAppc\MD5Checksum.cpp" />
+    <ClCompile Include="..\..\src\LAppc\MiscelaneosEx.cpp" />
     <ClCompile Include="..\..\src\LAppc\MyRegKey.cpp" />
     <ClCompile Include="..\..\src\LAppc\mytime.cpp" />
     <ClCompile Include="..\..\src\LAppc\stdafx.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="LAppc.h" />
     <ClInclude Include="MD5Checksum.h" />
     <ClInclude Include="MD5ChecksumDefines.h" />
+    <ClInclude Include="MiscelaneosEx.h" />
     <ClInclude Include="MyRegKey.h" />
     <ClInclude Include="MyTime.h" />
     <ClInclude Include="Resource.h" />

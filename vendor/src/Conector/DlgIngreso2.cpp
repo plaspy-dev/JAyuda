@@ -19,6 +19,8 @@ CDlgIngreso2::CDlgIngreso2(CWnd* pParent /*=NULL*/)
 	m_dwCac= 0;
 	m_bExiste= false;
 	m_bLocalMachine= false;
+	m_pConector=NULL;
+	m_bArchivo=false;
 }
 
 CDlgIngreso2::~CDlgIngreso2()
@@ -50,10 +52,22 @@ bool CDlgIngreso2::validateUser(CString usuario, CString passwd, bool codificado
 	m_EUsuario.EnableWindow(false);
 	m_BOK.EnableWindow(false);
 
-	m_szNombreUsuario = codificado ?  CUsuario::GetCodificado(usuario) : usuario;
+	if(m_bExiste && m_pConector->GetPasswd()!=passwd) {
 
-	m_pConector.SetUser(m_szNombreUsuario);
-	m_pConector.SetPasswd(passwd);
+		Sleep(3000);
+		CString temp="Acceso Denegado a " + usuario;
+		m_SAyuda.SetWindowText(temp);
+		CWnd *parent= GetParent();
+		if(parent) 
+			parent->SendMessage(WM_SETSTATUS, 2, (LPARAM) (const char *)temp);
+		Reset();
+		return false;
+	}
+
+	m_szNombreUsuario = CUsuario::GetCodificado(usuario);
+
+	m_pConector->SetUser(m_szNombreUsuario);
+	m_pConector->SetPasswd(passwd);
 
 	m_dwID= 0;
 	m_dwGrupo= 0;
@@ -61,7 +75,7 @@ bool CDlgIngreso2::validateUser(CString usuario, CString passwd, bool codificado
 	m_dwCac= 0;
     m_szNombreReal= usuario;
 
-	m_pConector.ResetState();
+	m_pConector->ResetState();
 
 	CQuery query("usuarios");
 
@@ -73,9 +87,11 @@ bool CDlgIngreso2::validateUser(CString usuario, CString passwd, bool codificado
 	query+="expira";
 	query+="ucambio";
 	query+="login";
+	query+="archivo";
 	query+="autonumerico";
 
-	m_pConector.Query(query.GetSelect("(estado!=-1 OR estado IS NULL) AND login='"+ usuario + "'"), codificado ? 1 : 2, this);
+	m_pConector->Query(query.GetSelect("(estado!=-1 OR estado IS NULL) AND login='"+ usuario + "'"), 1, this);
+	m_pConector->Find("SELECT SYSDATE()");
 
 	return true;
 }
@@ -116,34 +132,48 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 
 		if( wParam==QUERY_RESULT) {
 
-			if(message.GetID()==1 || message.GetID()==2) {
+			if(message.GetID()==1) {
 
 				CStringArray valores;
 
-				if(m_pConector.Find("SELECT SYSDATE()", this, &valores)!=-1) {
+				if(m_pConector->Find("SELECT SYSDATE()", this, &valores)!=-1) {
 					
 					CMyTime actual(valores[0]);
 					CString valor= message["vigencia"]; // actualizamos la fecha para que tenga acceso hasta este dia.
 					valor.Replace("00:00:00", "23:59:59");
 					CMyTime tiempo(valor);
 
-					if(!message["vigencia"].IsEmpty() && actual>tiempo) { // su cuenta a expirado
+					if(!message["vigencia"].IsEmpty()) { // su cuenta a expirado
 
-						m_pConector.KillQuery(-1, this);
-						MessageBox("Su cuenta de usuario ha expirado.\r\nPor favor consulte al administrador del sistema.",CApplicacion::GetAppName(),MB_ICONERROR);
-						m_SAyuda.SetWindowText("Su cuenta de usuario ha expirado");
-						CWnd *parent= GetParent();
-						if(parent)
-							parent->SendMessage(WM_SETSTATUS, 3, (LPARAM) (const char *)"Su cuenta de usuario ha expirado.Por favor consulte al administrador del sistema.");
-						Reset();
-						return 0;
+						if(actual>tiempo) {
+
+							m_pConector->KillQuery(-1, this);
+							MessageBox("Su cuenta de usuario ha expirado.\r\nPor favor consulte al administrador del sistema.",CApplicacion::GetAppName(),MB_ICONERROR);
+							m_SAyuda.SetWindowText("Su cuenta de usuario ha expirado");
+							CWnd *parent= GetParent();
+							if(parent)
+								parent->SendMessage(WM_SETSTATUS, 3, (LPARAM) (const char *)"Su cuenta de usuario ha expirado.Por favor consulte al administrador del sistema.");
+							Reset();
+							return 0;
+						}
+						// verificamos que no valla a expirar proximamente
+						tiempo-= COleDateTimeSpan(7, 0, 0, 0);
+						if(actual>tiempo) {
+							COleDateTimeSpan span(7, 0, 0, 0);
+							tiempo+= span;
+							span= tiempo-actual;
+							CString temp;
+							temp.Format("Su cuenta expirara en %d días (%s), por favor consulte a su administrador.",(int)span.GetTotalDays(), tiempo.GetFecha());
+							MessageBox(temp, NULL, MB_ICONWARNING);
+						}	
 					}
+					
 					CQuery query("usuariosh");
 					query+="dia";
 					query+="entrada";
 					query+="salida";
 
-					if(m_pConector.Find(query.GetSelect("usuario='" +message["id"] +"'"), this,&valores)>0) { // se encontro horario.
+					if(m_pConector->Find(query.GetSelect("usuario='" +message["id"] +"'"), this,&valores)>0) { // se encontro horario.
 						ASSERT(valores.GetCount()%3==0);
 						CUsuario2 usuario;
 
@@ -156,7 +186,7 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 						}
 						if(!usuario.CanEntry(actual)) {
 
-							m_pConector.KillQuery(-1, this);
+							m_pConector->KillQuery(-1, this);
 							MessageBox("No tiene acceso al sistema en este horario.",CApplicacion::GetAppName(), MB_ICONWARNING);
 							m_SAyuda.SetWindowText("No tiene acceso al sistema en este horario.");
 							CWnd *parent= GetParent();
@@ -174,10 +204,9 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 							span= actual-tiempo;
 						if(message["ucambio"].IsEmpty() || span.GetDays()>=atoi(message["expira"])) {
 							// aqui cambiamos la contraseña por medio de la IP
-							m_pConector.KillQuery(-1, this);
-							AFX_MANAGE_STATE(AfxGetStaticModuleState());
-							CDlgWebContrasena dlg(m_pConector.GetDatabaseAt(0)->GetHost(), m_szNombreReal, message["id"]);
-							if(dlg.DoModal()==IDOK) {
+							m_pConector->KillQuery(-1, this);
+
+							if(GetDlgCambioContrasena(m_szNombreReal, message["id"], m_pConector->GetHost())==IDOK) {
 
 								m_SAyuda.SetWindowText("Su contraseña a sido cambiada exitosamente.");
 								CWnd *parent= GetParent();
@@ -199,7 +228,7 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 						}
 					}
 				}
-				m_pConector.KillQuery(-1, this);
+				m_pConector->KillQuery(-1, this);
 				
 				m_szNombreReal= m_szNombreUsuario;
 				m_dwID=atoi(message["id"]);
@@ -209,12 +238,13 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 				m_szNombreUsuario= message["nombre"];
 				m_szNombreReal= message["login"];
 				m_nAutoNumerico= atoi(message["autonumerico"]);
+				m_bArchivo= message["archivo"]=="1";
 
 				// de aqui en adelante ya entro
 				// actualizamos el ultimo acceso.
 				CQuery query("usuarios");
 				query["acceso"]="SYSDATE()";
-				m_pConector.Find(query.GetUpdate("id='" +message["id"] + "'"));
+				m_pConector->Find(query.GetUpdate("id='" +message["id"] + "'"));
 
 				CMyRegKey::WriteProfileString("", "LastUser", m_EUsuario.Text);
 				CMyRegKey::WriteProfileInt("", "autostart", m_CRecordar.GetCheck());
@@ -224,19 +254,34 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 				CWnd *parent= GetParent();
 				if(parent)
 					parent->SendMessage(WM_SETSTATUS, 0, (LPARAM) (const char *)"Listo");
-				CDialog::OnOK();
+				if(m_dwGrupo) {
+					CQuery permisos("permisos");
+
+					permisos+="clase";
+					permisos+="permiso";
+
+					CString temp;
+					temp.Format("grupo='%d'", m_dwGrupo);
+					m_pConector->Query(permisos.GetSelect(temp), query_permisos, this);
+				} else {
+					CDialog::OnOK();
+				}
 				return 0;
+			} else if(message.GetID()==query_permisos) {
+				m_pPermisos.Add(message["clase"], atoi(message["permiso"]));
 			}
 		} else if(wParam==QUERY_EMPTY) {
 
 		} else if( wParam==QUERY_ERROR) {
 
-			if( message.GetID()==2) {
+			if( message.GetID()==1) {
 
-				m_SAyuda.SetWindowText(message.GetAt(0));
+				CString temp=message.GetAt(0);
+				temp.Replace(m_szNombreUsuario, m_EUsuario.Text);
+				m_SAyuda.SetWindowText(temp);
 				CWnd *parent= GetParent();
-				if(parent)
-					parent->SendMessage(WM_SETSTATUS, 2, (LPARAM) (const char *)message.GetAt(0));
+				if(parent) 
+					parent->SendMessage(WM_SETSTATUS, 2, (LPARAM) (const char *)temp);
 			} else {
 //#ifdef _DEBUG
 //				AfxGetMainWnd()->SendMessage(WM_SETSTATUS, 2, (LPARAM) (const char *)message->pMessage.GetAt(0));
@@ -244,9 +289,9 @@ LRESULT CDlgIngreso2::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		} else if( wParam==THREAD_END) {
 			if( message.GetID()==1) {
-				validateUser(m_szNombreReal, m_szPasswd, false);
-			} else {
 				Reset();
+			} else if(message.GetID()==query_permisos) {
+				CDialog::OnOK();
 			}
 		}
 	}
@@ -260,7 +305,7 @@ void CDlgIngreso2::Reset() {
 	m_BOK.EnableWindow(true);
 	m_EUsuario.SetSel(0, m_EUsuario.GetWindowTextLength());
 	m_EContrasena.Text="";
-	m_pConector.CloseConections();
+	// m_pConector->CloseConections();
 	m_bExiste ? m_EContrasena.SetFocus() : m_EUsuario.SetFocus();
 }
 
@@ -269,9 +314,13 @@ BOOL CDlgIngreso2::OnInitDialog()
 	CDialogXP::OnInitDialog();
 	m_SAyuda.SetWindowText("");
 	m_EUsuario.EnableWindow(!m_bExiste);
-	VERIFY(m_pConector.Cargar(m_bLocalMachine ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER));
-	ASSERT(m_pConector.GetDatabasesCount());
-	m_pConector.SetMainFrame(NULL);
+
+	m_pConector= (CConector *)GetParent()->SendMessage(WM_QUERYCONECTOR);
+	// VERIFY(m_pConector->Cargar(m_bLocalMachine ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER));
+	ASSERT(m_pConector->GetDatabasesCount());
+	if(m_pConector==NULL)
+		return false;
+	m_pConector->SetMainFrame(NULL);
 	m_EUsuario.SetWindowText(CMyRegKey::GetProfileString("", "LastUser", ""));
 
 	if(CMyRegKey::GetProfileInt("", "autolog")==0) {

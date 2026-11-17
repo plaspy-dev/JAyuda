@@ -10,7 +10,7 @@
 #pragma once
 #include "mylistctrl.h"
 
-class  __COMPONENTES_EXPORT__ CListCtrlSize : public CMyListCtrl
+class  __COMPONENTES_EXPORT__ CListCtrlSize : public CListCtrlXP
 {
 // Construction
 public:
@@ -38,6 +38,8 @@ protected:
 	CSize	m_sizeMin;
 	CSize	m_sizeMax;
 	CSize	m_sizeDelta;
+	CMapPtrToWord m_pTamanos;
+	int		m_nHeigth;
 	
 // Operaciones
 public:
@@ -83,7 +85,7 @@ public:
 	// Notes:		None.
 	//***********************************************************************
 	void UpdateSize();
-	void RealUpdateSize();
+	virtual void RealUpdateSize();
 
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
@@ -96,7 +98,11 @@ public:
 	virtual int InsertItem(int nItem,LPCTSTR lpszItem);
 	virtual int InsertItem(int nItem,LPCTSTR lpszItem,int nImage);
 	int	AddItem(LPCTSTR lpszItem);
+	void	AutoSizeColumns(int  delta=0);
+	void	SetMaxColumnWidth(int col, int maximo=120);
+	int		AddColumn(CString texto, int tipo=CListCtrlXP::tipocol_texto, int maximocolumna=0); // sobreescribimos la funcion del padre
+	void	UpdateHeight(LPCTSTR lpszText=NULL, int col=-1);
 DECLARE_MESSAGE_MAP()
-afx_msg void OnTimer(UINT_PTR nIDEvent);
-afx_msg void OnDestroy();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnDestroy();
 };

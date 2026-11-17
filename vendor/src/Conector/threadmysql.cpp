@@ -19,11 +19,6 @@ CThreadMySQL::~CThreadMySQL(void)
 {
 }
 
-bool CThreadMySQL::Kill(bool wait/*=false*/) {
-
-	return CThreadAuto::Kill(wait);
-}
-
 CArrayDB *CThreadMySQL::GetArrayDB() const {
 
 	return m_pArrayDB;
@@ -52,6 +47,7 @@ bool CThreadMySQL::Init() {
 				retorno= false;
 				break;
 			}
+			info->Lock();
 			info->SetPadre(m_pParent);
 			info->SetRetry(m_nReintentos);
 			if( m_nType==1) {
@@ -59,6 +55,7 @@ bool CThreadMySQL::Init() {
 					if( info->QueryBinary(m_szQuery, m_nID, this)!=-1) {
 						if(m_pMainWnd && ::IsWindow(m_pMainWnd->GetSafeHwnd()))
 							m_pMainWnd->PostMessage(WM_TREADRESULT,2, i);
+						info->UnLock();
 						break;
 					}
 				}
@@ -67,10 +64,12 @@ bool CThreadMySQL::Init() {
 					if(info->Query(m_szQuery, m_nID, this)!=-1) {
 						if(m_pMainWnd && ::IsWindow(m_pMainWnd->GetSafeHwnd()))
 							m_pMainWnd->PostMessage(WM_TREADRESULT,2, i);
+						info->UnLock();
 						break;
 					}
 				}
 			}
+			info->UnLock();
 		}
 	}
 	// TRACE ("Termino %d\n", GetTickCount()-dwTick);

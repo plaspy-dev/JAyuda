@@ -15,7 +15,6 @@
 # include "afxtempl.h"
 # include "treelistcolumninfo.h"
 # include "TreeListHeaderCtrl.h"
-# include "../newmenu/newmenu.h"
 # include "TreeListItemMap.h"
 # include <afxmt.h>
 
@@ -239,7 +238,7 @@ protected:
 	CTreeListHeaderCtrl		m_wndHeader;			// TreeList Header Control
 	CString					m_szVacia;
 	CUIntArray				m_nColumType;
-	CNewMenu				*m_hMenuContextual;
+	CMenu				*m_hMenuContextual;
 	bool					m_bCanShowMenu;
 	int						m_nSortedColumn;
 	bool					m_bAscendente;
@@ -412,8 +411,8 @@ public:
 	void	ExchangeItem( HTREELISTITEM  pItemA, HTREELISTITEM  pItemB );
 	void	MoveAfterItem( HTREELISTITEM  pItem, HTREELISTITEM  pAfter = NULL );
 
-	CNewMenu	*GetMenuContextual();
-	CNewMenu	*GetMenuContextual(CNewMenu	*menu);
+	CMenu	*GetMenuContextual();
+	CMenu	*GetMenuContextual(CMenu	*menu);
 
 protected:
 	int		GetWidth();								// retrieve display high of control
@@ -439,7 +438,7 @@ private:
 
 // Operations
 public:
-	BOOL	InsertColumn( LPCTSTR lpszColumnHeading, DWORD dwFormat = TLF_DEFAULT_LEFT, int nWidth = 0, int iImage = -1, int nMin = 0, int nMax = 0);
+	int		InsertColumn( LPCTSTR lpszColumnHeading, DWORD dwFormat = TLF_DEFAULT_LEFT, int nWidth = 0, int iImage = -1, int nMin = 0, int nMax = 0);
 	BOOL	DeleteColumn( int iCol );
 
 	int		InsertItem( int nItem, LPCTSTR lpszItem );
@@ -462,9 +461,6 @@ public:
 
 protected:
 	void SelectRange(HTREELISTITEM hFirst, HTREELISTITEM hLast, BOOL bOnly = TRUE);
-	HTREELISTITEM 	InsertItemNew	( LPCTSTR lpszItem, HTREELISTITEM  pParent );
-	HTREELISTITEM 	InsertItemFirst	( LPCTSTR lpszItem, HTREELISTITEM  pParent );
-	HTREELISTITEM 	InsertItemNext	( LPCTSTR lpszItem, HTREELISTITEM  pParent, HTREELISTITEM  pInsertAfter );
 	HTREELISTITEM 	GetLastChildItem( HTREELISTITEM  pParent = TLI_ROOT );
 	HTREELISTITEM 	GetSortChildItem( HTREELISTITEM  pParent = TLI_ROOT );
 	HTREELISTITEM 	GetValidChildItem( HTREELISTITEM  pParent, HTREELISTITEM  pChild);

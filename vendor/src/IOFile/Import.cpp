@@ -460,7 +460,7 @@ bool CImport::Importar(CString Archivo) {
 	if( m_pTipos.GetAt(0)==TIPO_CONSULTA) {
 		
 		CString temp=m_szTempPath;
-		m_szTempPath= CApplicacion::GetAppPath();
+		m_szTempPath= GetCommonPath("") + "\\";
 		// ahora si descomprimimos las consultas donde debe ser
 		if(!ExtractFiles(Archivo)) {
 			m_szTempPath= temp;
@@ -592,7 +592,7 @@ bool CImport::ComprobarIntegridad() {
 
 				if(f.Open(m_szTempPath+mycrc, CFile::modeRead)) {
 
-					real=CMD5Checksum::GetMD5(m_szTempPath+temp);
+					real=CMD5Checksum::GetMD5Ex(m_szTempPath+temp);
 					f.ReadString(nuevoValor);
 					f.Close();
 					if( real!= nuevoValor) 
@@ -607,7 +607,7 @@ bool CImport::ComprobarIntegridad() {
 
 			if(f.Open(m_szTempPath+ m_pNombres.GetAt(i) + ".key", CFile::modeRead)) {
 
-				real= CMD5Checksum::GetMD5(m_szTempPath+m_pNombres.GetAt(i)+".xml");
+				real= CMD5Checksum::GetMD5Ex(m_szTempPath+m_pNombres.GetAt(i)+".xml");
 				f.ReadString(nuevoValor);
 				f.Close();
 				if( real!= nuevoValor) 

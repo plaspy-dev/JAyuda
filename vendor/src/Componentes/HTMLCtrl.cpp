@@ -21,6 +21,57 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+
+CExternalJavaScript::CExternalJavaScript(CHtmlView *parent) {
+
+	m_pHtmlView= parent;
+	EnableAutomation();
+}
+
+void CExternalJavaScript::closeApp() {
+
+	AfxGetMainWnd()->SendMessage(WM_CLOSE);
+}
+
+void CExternalJavaScript::Resize(long width, long heigth) {
+
+	CWnd *parent = m_pHtmlView->GetParent();
+	CRect rect;
+
+	width+=50;
+	heigth+=50;
+
+	parent->GetWindowRect(rect);
+
+	rect.bottom= rect.top+ heigth;
+	rect.right= rect.left+ width;
+
+	parent->GetParent()->ClientToScreen(rect);
+
+	parent->MoveWindow(rect);
+	parent->CenterWindow();
+}
+
+void CExternalJavaScript::onHome() {
+
+	CWnd *parent = m_pHtmlView->GetParent();
+
+	if (parent != NULL) {
+
+		Notification	notification(m_pHtmlView->m_hWnd,m_pHtmlView->GetDlgCtrlID(), CHTMLCtrl::OnHomeRequested);
+
+		LRESULT result = parent->SendMessage(WM_NOTIFY,
+			notification.hdr.idFrom,
+			(LPARAM)&notification);
+	}
+}
+
+BEGIN_DISPATCH_MAP(CExternalJavaScript,CCmdTarget)
+	DISP_FUNCTION(CExternalJavaScript,"closeApp",closeApp,VT_EMPTY,VTS_NONE)
+	DISP_FUNCTION(CExternalJavaScript,"onHome",onHome,VT_EMPTY,VTS_NONE)
+	DISP_FUNCTION(CExternalJavaScript,"Resize",Resize,VT_EMPTY,VTS_I4 VTS_I4)
+END_DISPATCH_MAP()
+
 IMPLEMENT_DYNAMIC(CHTMLCtrl, CHtmlView)
 
 BEGIN_MESSAGE_MAP(CHTMLCtrl, CHtmlView)
@@ -35,6 +86,7 @@ END_MESSAGE_MAP()
 // Construction...
 CHTMLCtrl::CHTMLCtrl()
 {
+	m_pExternal= new CExternalJavaScript(this);
 	this->m_csHTMLContent = "";
 	this->m_bHTMLDocumentLoadedOK = false;
 	m_bNavigate=false;
@@ -127,7 +179,7 @@ void CHTMLCtrl::OnBeforeNavigate2( LPCTSTR lpszURL, DWORD nFlags, LPCTSTR lpszTa
 {
   const char APP_PROTOCOL[] = "app:";
 
-  int len = _tcslen(APP_PROTOCOL);
+  int len = (int)_tcslen(APP_PROTOCOL);
 
   if (_tcsnicmp(lpszURL, APP_PROTOCOL, len) == 0)
 	{
@@ -135,6 +187,21 @@ void CHTMLCtrl::OnBeforeNavigate2( LPCTSTR lpszURL, DWORD nFlags, LPCTSTR lpszTa
 		OnAppCmd(lpszURL + len);
 		*pbCancel = TRUE;
   } else {
+
+	  CWnd *parent = GetParent();
+
+	  if (parent != NULL) {
+
+		  Notification	notification(m_hWnd,GetDlgCtrlID(),BeforeNavigate2);
+
+		  notification.URL = lpszURL;
+
+		  LRESULT result = parent->SendMessage(WM_NOTIFY,
+			  notification.hdr.idFrom,
+			  (LPARAM)&notification);
+
+	  }
+
 	  CString url= lpszURL;
 	  if(url!="about:Blank")
 		m_bNavigate=true;

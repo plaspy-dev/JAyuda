@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\$(ConfigurationName)"
+			IntermediateDirectory="c:\obj\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -102,7 +102,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\$(ConfigurationName)"
+			IntermediateDirectory="c:\obj\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -305,6 +305,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\buttons.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\filelarge.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\filesmall.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\loading\loading0001.bmp"
 				>
 			</File>
@@ -349,6 +361,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\res\main.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\Template.ico"
 				>
 			</File>
@@ -366,6 +382,14 @@
 			</File>
 			<File
 				RelativePath=".\res\Toolbar.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\writelarge.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\writesmall.bmp"
 				>
 			</File>
 		</Filter>

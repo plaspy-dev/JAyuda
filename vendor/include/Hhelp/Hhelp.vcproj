@@ -19,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\lib"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\$(ConfigurationName)"
+			IntermediateDirectory="c:\obj\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -102,7 +102,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\libr"
-			IntermediateDirectory="..\..\obj\$(ProjectName)\$(ConfigurationName)"
+			IntermediateDirectory="c:\obj\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="2"
 			CharacterSet="2"
@@ -127,7 +127,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="./"
+				AdditionalIncludeDirectories="./;../"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FixHtmlView.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\HHelp\FormHelp.cpp"
 				>
 			</File>
@@ -241,6 +245,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FixHtmlView.h"
+				>
+			</File>
+			<File
 				RelativePath=".\FormHelp.h"
 				>
 			</File>
@@ -275,11 +283,19 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\res\grande.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\Hhelp.rc"
 				>
 			</File>
 			<File
 				RelativePath=".\res\Hhelp.rc2"
+				>
+			</File>
+			<File
+				RelativePath=".\res\pequeno.bmp"
 				>
 			</File>
 			<File

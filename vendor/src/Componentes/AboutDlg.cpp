@@ -31,6 +31,7 @@ BOOL CAboutDlg::OnInitDialog() {
 	texto.Format("%s, Versión %s", m_szProducto, m_szVersion);
 	m_SVersion.SetWindowText(texto);
 	m_SLink.SetURL(CApplicacion::GetURL().IsEmpty() ? "http://www.sdgltda.com" : CApplicacion::GetURL());
+	m_SLink.SizeToContent();
 	texto.Format("Acerca de %s", CApplicacion::GetLongName());
 	SetWindowText(texto);
 

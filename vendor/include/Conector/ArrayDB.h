@@ -50,7 +50,9 @@ protected:
 	CString m_szUser;
 	CString m_szPasswd;
 	int		m_nPort;
+	unsigned int	m_nTimeOut;
 	bool	m_bInscrutado;
+	CMutex	m_pMutex;
 public:
 	void	SetHost(CString host);
 	void	SetDB(CString db);
@@ -59,13 +61,16 @@ public:
 	void	SetPort(int port);
 	void	SetMainFrame(CWnd* mainframe);
 	void	SetIncrustado(bool incrustado/*=false*/);
+	void	Lock();
+	void	UnLock();
 
-	CString	GetHost();
+	CString	GetHost() const;
 	CString GetDB();
 	CString GetUser();
-	CString GetPassword();
-	int		GetPort();
+	CString GetPassword() const;
+	int		GetPort() const;
 	bool	EsIncrustado() const ;
+	void	SetTimeOut(unsigned int timeout);
 public:
 	void	ResetState();
 	void	CloseConections();
@@ -77,7 +82,7 @@ public:
 	void	SetCanConnect(bool intentar=true);
 	CArrayDB &operator=(const CArrayDB &database);
 	CArrayDB *GetAt(int index);
-	int		GetCount();
+	int		GetCount() const;
 	void	Add( CArrayDB *info);
 	void	RemoveAll();
 	CString GetLastError();
@@ -107,6 +112,7 @@ public:
 	DECLARE_DLL_FUNCTION(int , STDCALL,mysql_server_init, (int, char **, char **))
 	DECLARE_DLL_FUNCTION(void, STDCALL,mysql_server_end, (void))
 	DECLARE_DLL_FUNCTION(int, STDCALL,mysql_options, (MYSQL *,enum mysql_option,const char *))
+	DECLARE_DLL_FUNCTION(my_bool, STDCALL, mysql_change_user, (MYSQL *, const char *, const char *, const char *))
 
 	BEGIN_DLL_INIT()
 		INIT_DLL_FUNCTION(int, STDCALL,mysql_ping, (MYSQL *), "mysql_ping")
@@ -127,5 +133,6 @@ public:
 		INIT_DLL_FUNCTION(int, STDCALL,mysql_server_init, (int , char **, char **),"mysql_server_init")
 		INIT_DLL_FUNCTION(void, STDCALL,mysql_server_end, (void),"mysql_server_end")
 		INIT_DLL_FUNCTION(int, STDCALL,mysql_options, (MYSQL *,enum mysql_option,const char *),"mysql_options")
+		INIT_DLL_FUNCTION(my_bool, STDCALL, mysql_change_user, (MYSQL *, const char *, const char *, const char *), "mysql_change_user")
 	END_DLL_INIT()
 };

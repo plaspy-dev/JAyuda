@@ -62,7 +62,12 @@ void CBitmapPicture::HideInfo(bool hide/*=true*/) {
 BOOL CBitmapPicture::SetBitmap(HBITMAP hBitmap)
 {
     ::DeleteObject(m_hBitmap);
-    m_hBitmap = hBitmap;
+	CEnBitmap bmptmp;
+	bmptmp.CopyImage(hBitmap);
+	// fireworks cambia la paleta del 0xC0 a 0xC6 
+	bmptmp.ReplaceColor(RGB(0xC0,0xC0,0xC0),::GetSysColor(COLOR_3DFACE));
+	bmptmp.ReplaceColor(RGB(0xC6,0xC6,0xC6),::GetSysColor(COLOR_3DFACE));
+	m_hBitmap = (HBITMAP)bmptmp.Detach();
     return ::GetObject(m_hBitmap, sizeof(BITMAP), &m_bmInfo);
 }
 
@@ -136,12 +141,13 @@ BOOL CBitmapPicture::OnEraseBkgnd(CDC* pDC)
 
     // We have a bitmap - draw it.
 
-    // Create compatible memory DC using the controls DC
+	// Create compatible memory DC using the controls DC
 	CDC dcMem;
 	VERIFY( dcMem.CreateCompatibleDC(pDC));
 
 	// Select bitmap into memory DC.
 	HBITMAP* pBmpOld = (HBITMAP*) ::SelectObject(dcMem.m_hDC, m_hBitmap);
+
 
 	CBrush brush(RGB(255,255,255));
 	CPen *oldpen=NULL;

@@ -30,8 +30,6 @@
 #include "stdafx.h"
 # include "Componentes.h"
 #include "TextProgressCtrl.h"
-# include "newmenu/newmenu.h"
-# include "MemDC.h"
 
 
 #ifdef _DEBUG
@@ -140,8 +138,8 @@ void CTextProgressCtrl::OnPaint()
     double Fraction = (double)(m_nPos - m_nMin) / ((double)(m_nMax - m_nMin));
 
 	CPaintDC PaintDC(this); // device context for painting
-    CMemDC dc(&PaintDC);
-	if( !dc.m_hDC) {
+    CMemDC dc(PaintDC, this);
+	if( !dc.IsMemDC()) {
 		Default();
 		return;
 	}
@@ -170,27 +168,27 @@ void CTextProgressCtrl::OnPaint()
 	gRect.UpperLeft  = 0;
 	gRect.LowerRight = 1;
 
-	dc.GradientFill(vert,2,&gRect,1,GRADIENT_FILL_RECT_V);
+	dc.GetDC().GradientFill(vert,2,&gRect,1,GRADIENT_FILL_RECT_V);
 
     RightRect.left = LeftRect.right;
-    dc.FillSolidRect(RightRect, m_colBk);
+    dc.GetDC().FillSolidRect(RightRect, m_colBk);
 
     if (m_bShowText)
     {
         CString str;
-		pFount = dc.SelectObject(&m_fountHorz);
+		pFount = dc.GetDC().SelectObject(&m_fountHorz);
 
         if (m_strText.GetLength())
             str = m_strText;
         else
             str.Format("%d%%", (int)(Fraction*100.0));
 
-        dc.SetBkMode(TRANSPARENT);
+        dc.GetDC().SetBkMode(TRANSPARENT);
 
         CRgn rgn;
         rgn.CreateRectRgn(LeftRect.left, LeftRect.top, LeftRect.right, LeftRect.bottom);
-        dc.SelectClipRgn(&rgn);
-        dc.SetTextColor(m_colTextBk);
+        dc.GetDC().SelectClipRgn(&rgn);
+        dc.GetDC().SetTextColor(m_colTextBk);
 
 		if(m_dwFormato&DT_CENTER) {
 
@@ -198,15 +196,15 @@ void CTextProgressCtrl::OnPaint()
 			ClientRect.left+=2;
 			ClientRect.top-=2;
 		}		
-        dc.DrawText(str, ClientRect, m_dwFormato);
+        dc.GetDC().DrawText(str, ClientRect, m_dwFormato);
 
         rgn.DeleteObject();
         rgn.CreateRectRgn(RightRect.left, RightRect.top, RightRect.right, RightRect.bottom);
-        dc.SelectClipRgn(&rgn);
-        dc.SetTextColor(m_colTextFore);
+        dc.GetDC().SelectClipRgn(&rgn);
+        dc.GetDC().SetTextColor(m_colTextFore);
 
-        dc.DrawText(str, ClientRect, m_dwFormato);
-		dc.SelectObject(pFount);
+        dc.GetDC().DrawText(str, ClientRect, m_dwFormato);
+		dc.GetDC().SelectObject(pFount);
     }
 }
 

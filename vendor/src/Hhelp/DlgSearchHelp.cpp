@@ -20,7 +20,7 @@ CDlgSearchHelp::CDlgSearchHelp(CWnd* pParent /*=NULL*/)
 CDlgSearchHelp::~CDlgSearchHelp()
 {
 	if(m_pSearch) {
-		delete m_pSearch;
+		m_pSearch->Kill();
 		m_pSearch= NULL;
 	}
 }
@@ -90,7 +90,7 @@ void CDlgSearchHelp::OnBnClickedBbuscar()
 	m_LCResultados.SetMessageLista("Buscando");
 	m_CBBuscar.SetFocus();
 	if(m_pSearch) {
-		delete m_pSearch;
+		m_pSearch->Kill();
 		m_pSearch= NULL;
 	}
 	m_pSearch= new CThreadSearch();

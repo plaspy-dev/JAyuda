@@ -3,6 +3,7 @@
 # include "IOFile.h"
 # include "DlgExportar.h"
 # include "XZip.h"
+#include "odbcinst.h"
 
 CExport::CExport(CConector *pConector)
 {
@@ -15,6 +16,9 @@ CExport::CExport(CConector *pConector)
 	m_pHtml= NULL;
 	m_bVacio= false;
 	m_nColumna= -1;
+	m_bUseBasicExcel=false;
+	m_pSheet=NULL;
+	m_pBasicExcel=NULL;
 
 	char temporal[MAX_PATH];
 
@@ -28,10 +32,22 @@ CExport::CExport(CConector *pConector)
 
 CExport::~CExport(void)
 {
+	if(m_pBasicExcel)
+		delete m_pBasicExcel;
 	if( m_pXML)
 		delete m_pXML;
 	if( m_pHtml)
 		delete m_pHtml;
+}
+
+void CExport::SetRows(int nMaxRow) {
+
+	SetBasicExcel(nMaxRow<1000);
+}
+
+void CExport::SetBasicExcel(bool basicexcel/*=true*/) {
+
+	m_bUseBasicExcel=basicexcel;
 }
 
 void CExport::SetTipoColumna(int columna, int tipo) {
@@ -104,10 +120,20 @@ void CExport::Inicio(CStringArray &valores) {
 		wkey.Write(*m_pXML);
 	} else if( m_dwTipo==EXTENCION_EXCEL) {
 
-		for( int i=0; i<m_pAtributos.GetCount(); i++) {
+		if(m_bUseBasicExcel) {
+			m_pBasicExcel= new BasicExcel();
+			m_pBasicExcel->New(1);
+			m_pBasicExcel->RenameWorksheet("Sheet1", "Hoja1");
+			m_pSheet= m_pBasicExcel->GetWorksheet("Hoja1");
+		}
 
-			miniexcel(m_nAgregados,i) = m_pAtributos.GetAt(i);
-			miniexcel(m_nAgregados,i).setAlignament(ALIGN_CENTER);
+		for( int i=0; i<m_pAtributos.GetCount(); i++) {
+			if(m_bUseBasicExcel) {
+				m_pSheet->Cell(m_nAgregados, i)->Set(m_pAtributos[i]);
+			} else {
+				m_pMiniExcel(m_nAgregados,i) = m_pAtributos.GetAt(i);
+				m_pMiniExcel(m_nAgregados,i).setAlignament(ALIGN_CENTER);
+			}
 		}
 		SetTipoColumna(m_pAtributos.GetCount(), 1);
 		m_nAgregados++;
@@ -159,11 +185,16 @@ void CExport::Terminar() {
 		}
 	} else if( m_dwTipo==EXTENCION_EXCEL) { 
 
-		if( m_nCurrent>= m_pNombres.GetCount()-1)
-			
-			if( f=fopen(m_szFinalFile, "wb")) 
-
-				miniexcel.Write(f);
+		if( m_nCurrent>= m_pNombres.GetCount()-1) {
+			if(m_bUseBasicExcel) {
+				m_pBasicExcel->SaveAs(m_szFinalFile);
+				delete m_pBasicExcel;
+				m_pBasicExcel=NULL;
+			} else {
+				if( f=fopen(m_szFinalFile, "wb")) 
+					m_pMiniExcel.Write(f);
+			}
+		}
 		m_nAgregados++;
 	} else if( m_dwTipo==EXTENCION_TXT || m_dwTipo==EXTENCION_DESCONOCIDA) {
 		if( m_nCurrent>=m_pNombres.GetCount()-1)
@@ -314,16 +345,54 @@ void CExport::Agregar(CStringArray &valores, CString link) {
 		for( int i=0; i<len;i++) {
 
 			tipo= m_uaTipos.GetAt(i);
-			if( tipo==1) {
-				if( m_bNumero && ((valor=this->ConvertToNumero(valores.GetAt(i)))!=NULL || valores.GetAt(i)=="0")) 
-					miniexcel(m_nAgregados, i)= valor;
-				else miniexcel(m_nAgregados,i)= valores.GetAt(i);
-			} else if( tipo==2) { // entero
-				miniexcel(m_nAgregados, i)= atof(valores.GetAt(i));
-			} else if( tipo==3) {
-				miniexcel(m_nAgregados, i)= atof(CEditFloat::GetNormal(valores.GetAt(i)));
-			} else miniexcel(m_nAgregados,i)= valores.GetAt(i);
+			if(m_bUseBasicExcel) {
+				BasicExcelCell* cell= m_pSheet->Cell(m_nAgregados, i);
+				if( tipo==1) {
+					if( m_bNumero && ((valor=this->ConvertToNumero(valores.GetAt(i)))!=NULL || valores.GetAt(i)=="0")) 
+						cell->Set(valor);
+					else cell->Set(valores.GetAt(i));
+				} else if( tipo==2) { // entero
+					cell->Set(atof(valores.GetAt(i)));
+				} else if( tipo==3) {
+					cell->Set(atof(CEditFloat::GetNormal(valores.GetAt(i))));
+				} else cell->Set(valores.GetAt(i));
+			} else {
+				if( tipo==1) {
+					if( m_bNumero && ((valor=this->ConvertToNumero(valores.GetAt(i)))!=NULL || valores.GetAt(i)=="0")) 
+						m_pMiniExcel(m_nAgregados, i)= valor;
+					else m_pMiniExcel(m_nAgregados,i)= valores.GetAt(i);
+				} else if( tipo==2) { // entero
+					m_pMiniExcel(m_nAgregados, i)= atof(valores.GetAt(i));
+				} else if( tipo==3) {
+					m_pMiniExcel(m_nAgregados, i)= atof(CEditFloat::GetNormal(valores.GetAt(i)));
+				} else m_pMiniExcel(m_nAgregados,i)= valores.GetAt(i);
+			}
 		}
+
+		//double valor=NULL;
+		//int tipo;
+		//COleDateTime t1;
+		//for( int i=0; i<len;i++) {
+		//	tipo= m_uaTipos.GetAt(i);
+		//	if( tipo==1) {
+		//		if( m_bNumero && ((valor=this->ConvertToNumero(valores.GetAt(i)))!=NULL || valores.GetAt(i)=="0")) {
+		//			if(m_pSheet) 
+		//				m_pSheet->Cell(m_nAgregados, i)->SetDouble(valor);
+		//		} else {
+		//			if(m_pSheet) 
+		//				m_pSheet->Cell(m_nAgregados,i)->SetString(valores.GetAt(i));
+		//		}
+		//	} else if( tipo==2) { // entero
+		//		if(m_pSheet) {
+		//			m_pSheet->Cell(m_nAgregados, i)->SetDouble(atof(valores.GetAt(i))); // es equivalente al setinteger, pero con mas tamaño
+		//		}
+		//	} else if( tipo==3) {
+		//		if(m_pSheet) 
+		//			m_pSheet->Cell(m_nAgregados, i)->SetDouble(atof(CEditFloat::GetNormal(valores.GetAt(i))));
+		//	} else if(m_pSheet) {
+		//		m_pSheet->Cell(m_nAgregados,i)->SetString(valores.GetAt(i));
+		//	}
+		//}
 		m_nAgregados++;
 	} else if( m_dwTipo==EXTENCION_TXT || m_dwTipo==EXTENCION_DESCONOCIDA) {
 
@@ -345,12 +414,15 @@ void CExport::Agregar(CStringArray &valores, CString link) {
 			m_pHtml->Write("\t<tr>\n");
 			for( int i=0; i<len;i++) {
 
+				CString valor=valores.GetAt(i);
+				if(valor.IsEmpty())
+					valor="&nbsp;";
 				if(useimages && !i && m_nColumna!=-1) {
 					m_pHtml->WriteEx("\t\t<td><a name=\"%s\"></a><a href=\"?ods=%s#%s\"><img src=\"image.gif\"></a>", link.IsEmpty() ? valores.GetAt(m_nColumna): link, link.IsEmpty() ? valores.GetAt(m_nColumna): link,link.IsEmpty() ? valores.GetAt(m_nColumna): link);
-					m_pHtml->WriteEx("%s</td>\n", valores.GetAt(i));
+					m_pHtml->WriteEx("%s</td>\n", valor);
 				} else if( !useimages && i==m_nColumna)
 					m_pHtml->WriteEx("\t\t<td><a name=\"%s\"></a><a href=\"?ods=%s#%s\">%s</a></td>\n", link.IsEmpty() ? valores.GetAt(i) : link, link.IsEmpty() ? valores.GetAt(i) : link, link.IsEmpty() ? valores.GetAt(i) : link, valores.GetAt(i), link.IsEmpty() ? valores.GetAt(i) : link, valores.GetAt(i));
-				else m_pHtml->WriteEx("\t\t<td>%s</td>\n", valores.GetAt(i));
+				else m_pHtml->WriteEx("\t\t<td>%s</td>\n", valor);
 			}
 			m_pHtml->Write("\t</tr>\n");
 		}

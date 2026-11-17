@@ -3,8 +3,8 @@
 
 #include "stdafx.h"
 #include "DlgBases.h"
-# include "componentes/newmenu/newmenu.h"
 # include "conector.h"
+# include "AsyncProxySocket.h"
 // CDlgBases dialog
 
 IMPLEMENT_DYNAMIC(CDlgBases, CDialog)
@@ -33,6 +33,14 @@ void CDlgBases::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDITREINTENTOS, m_EReintentos);
 	DDX_Control(pDX, IDC_EARCHIVO, m_EArchivo);
 	DDX_Control(pDX, IDC_BEXAMINAR, m_BExaminar);
+	DDX_Control(pDX, IDC_SFINPROXY, m_SFinProxy);
+	DDX_Control(pDX, IDC_CPROXY,m_CBTipo);
+	DDX_Control(pDX, IDC_ESERVIDOR,m_EServidor);
+	DDX_Control(pDX, IDC_EPUERTO,m_EPuertoProxy);
+	DDX_Control(pDX, IDC_EUSUARIO,m_EUsuario);
+	DDX_Control(pDX, IDC_ECONTRASENA,m_EContrasena);
+	DDX_Control(pDX, IDC_EKEEPALIVE,m_EKeepAlive);
+	DDX_Control(pDX, IDC_ELECTURATIMEOUT, m_ELecturaTimeout);
 }
 
 
@@ -45,6 +53,7 @@ BEGIN_MESSAGE_MAP(CDlgBases, CDialog)
 	ON_COMMAND(32000, OnListasEliminar)
 	ON_BN_CLICKED(IDCANCEL, OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_BEXAMINAR, &CDlgBases::OnBnClickedBexaminar)
+	ON_CBN_SELCHANGE(IDC_CPROXY, OnCbnSelChangeCProxy)
 END_MESSAGE_MAP()
 
 void CDlgBases::OnBnClickedOk()
@@ -55,6 +64,35 @@ void CDlgBases::OnBnClickedOk()
 	m_ENombreServidor.GetWindowText(servidor);
 	m_EPuerto.GetWindowText(puerto);
 	
+	if (m_CBTipo.SelectedData!=PROXYTYPE_NOPROXY)
+	{
+		if (m_EServidor.Text=="")
+		{
+			AfxMessageBox("Por favor ingrese el servidor proxy");
+			m_EServidor.SetFocus();
+			return;
+		}
+		int puerto= atoi(m_EPuertoProxy.Text);
+		if (puerto<1 || puerto>65535)
+		{
+			AfxMessageBox("Por favor ingrese un puerto valido para el proxy");
+			m_EPuertoProxy.SetFocus();
+			return;
+		}
+	}
+	if ((m_CBTipo.SelectedData==PROXYTYPE_SOCKS5) || (m_CBTipo.SelectedData==PROXYTYPE_HTTP11))
+	{
+	} else {
+		m_EUsuario.Text="";
+		m_EContrasena.Text="";
+	}
+
+	CMyRegKey::WriteProfileInt("conectorp\\proxy", "tipo", m_CBTipo.SelectedData);
+	CMyRegKey::WriteProfileString("conectorp\\proxy", "servidor", m_EServidor.Text);
+	CMyRegKey::WriteProfileString("conectorp\\proxy", "puerto", m_EPuertoProxy.Text);
+	CMyRegKey::WriteProfileString("conectorp\\proxy", "usuario", m_EUsuario.Text);
+	CMyRegKey::WriteProfileString("conectorp\\proxy", "contrasena", m_EContrasena.Text);
+
 	if( m_bModificar) 
 
 		m_LCDB.DeleteItem(m_nSeleccion);
@@ -76,7 +114,10 @@ void CDlgBases::OnBnClickedOk()
 			}
 			m_pConector.Guardar();
 			m_EReintentos.GetWindowText(puerto);
+			CMyRegKey::WriteProfileInt("control", "keepalive", atoi(m_EKeepAlive.Text));
 			CMyRegKey::WriteProfileInt("control", "retry", atol(puerto));
+			CMyRegKey::WriteProfileInt("control", "conectortimeout", atol(m_ELecturaTimeout.Text));
+
 			if(m_szArchivo!=m_EArchivo.Text) {
 
 				CMyRegKey key(HKEY_LOCAL_MACHINE, CApplicacion::GetAppKey());
@@ -112,7 +153,7 @@ void CDlgBases::OnNMRclickListdb(NMHDR *pNMHDR, LRESULT *pResult)
 
 	m_nSeleccion= pNMListView->iItem;
 
-	CNewMenu menu;
+	CMenu menu;
 
 	menu.CreatePopupMenu();
 	menu.InsertMenu(0, MF_BYPOSITION | MF_STRING, 32001, "&Editar");
@@ -141,13 +182,50 @@ BOOL CDlgBases::OnInitDialog()
 	CDialog::OnInitDialog();
 	CString temp;
 
-	m_SPrimero.SetNextSectionId( IDC_STATICSEGUNDO);
+	m_SPrimero.SetNextSectionCtrl(m_SSegundo);
 	m_SPrimero.Collapse();
+	m_SSegundo.SetNextSectionCtrl(m_SFinProxy);
+	m_SSegundo.Collapse();
+
+	m_CBTipo.SetItemData(m_CBTipo.AddString("(Ninguno)"), PROXYTYPE_NOPROXY);
+	m_CBTipo.SetItemData(m_CBTipo.AddString("SOCKS 4"), PROXYTYPE_SOCKS4);
+	m_CBTipo.SetItemData(m_CBTipo.AddString("SOCKS 4A"), PROXYTYPE_SOCKS4A);
+	m_CBTipo.SetItemData(m_CBTipo.AddString("SOCKS 5"), PROXYTYPE_SOCKS5);
+	m_CBTipo.SetItemData(m_CBTipo.AddString("HTTP"), PROXYTYPE_HTTP11);
+
+	m_CBTipo.SelectedData= CMyRegKey::GetProfileInt("conectorp\\proxy", "tipo", 0);
+	m_EServidor.Text= CMyRegKey::GetProfileString("conectorp\\proxy", "servidor", "");
+	m_EPuertoProxy.Text= CMyRegKey::GetProfileString("conectorp\\proxy", "puerto", "");
+	m_EUsuario.Text= CMyRegKey::GetProfileString("conectorp\\proxy", "usuario", "");
+	m_EContrasena.Text= CMyRegKey::GetProfileString("conectorp\\proxy", "contrasena", "");
+
+	if(m_EServidor.Text.IsEmpty()) {
+		
+		CMyRegKey proxy(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+
+		CString szProxy= proxy.GetString("", "ProxyServer", "");
+
+		CString servidor= GetLeftString(szProxy, ":");
+		CString puerto= GetRightString(szProxy, ":");
+
+		m_EServidor.Text=servidor;
+		m_EPuertoProxy.Text=puerto;
+	}
 
 	temp.Format("%d", MYSQL_PORT);
 	m_EPuerto.SetWindowText(temp);
+
 	temp.Format("%d", CMyRegKey::GetProfileInt("control", "retry", 3));
 	m_EReintentos.SetWindowText(temp);
+
+	temp.Format("%d", CMyRegKey::GetProfileInt("control", "keepalive", 10));
+	m_EKeepAlive.Text= temp;
+
+	temp.Format("%d", CMyRegKey::GetProfileInt("control", "conectortimeout", 20));
+	m_ELecturaTimeout.Text= temp;
+
+	// CMyRegKey::WriteProfileInt("control", "conectortimeout", atol(m_ELecturaTimeout.Text));
+
 	m_LCDB.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 	m_LCDB.InsertColumn(0, "Servidor", LVCFMT_LEFT, 100);
 	m_LCDB.InsertColumn(1, "Base de datos", LVCFMT_LEFT, 100);
@@ -171,15 +249,14 @@ BOOL CDlgBases::OnInitDialog()
 
 	CConector	m_pConector;
 	m_pConector.Cargar();
-	CArrayDB *info=NULL;
+
 	for( int i=0; i<m_pConector.GetDatabasesCount(); i++) {
 
-		info= m_pConector.GetDatabaseAt(i);
-		m_LCDB.InsertItem( i, info->GetHost());
-		m_LCDB.SetItemText( i, 1, info->GetDB());
-		temp.Format("%d", info->GetPort());
+		m_LCDB.InsertItem( i, m_pConector.GetHost());
+		m_LCDB.SetItemText( i, 1, m_pConector.GetNombreDatabase());
+		temp.Format("%d", m_pConector.GetPort());
 		m_LCDB.SetItemText( i, 2, temp);
-		m_LCDB.SetItemText(i, 3, info->EsIncrustado() ? "Si" : "No");
+		m_LCDB.SetItemText(i, 3, m_pConector.IsEmbedded() ? "Si" : "No");
 	}
 	return TRUE;
 }
@@ -271,4 +348,25 @@ void CDlgBases::OnBnClickedBexaminar()
 	}
 	if(bRet)
 		m_EArchivo.Text=szFolder;
+}
+
+void CDlgBases::OnCbnSelChangeCProxy() {
+
+	if (m_CBTipo.SelectedData==PROXYTYPE_NOPROXY) {
+		m_EServidor.Enable=false;
+		m_EPuertoProxy.Enable=false;
+		m_EUsuario.Enable=false;
+		m_EContrasena.Enable=false;
+	} else if ((m_CBTipo.SelectedData==PROXYTYPE_SOCKS5) || (m_CBTipo.SelectedData==PROXYTYPE_HTTP11))
+	{
+		m_EServidor.Enable=true;
+		m_EPuertoProxy.Enable=true;
+		m_EUsuario.Enable=true;
+		m_EContrasena.Enable=true;
+	} else {
+		m_EServidor.Enable=true;
+		m_EPuertoProxy.Enable=true;
+		m_EUsuario.Enable=false;
+		m_EContrasena.Enable=false;
+	}
 }

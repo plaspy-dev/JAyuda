@@ -1,9 +1,9 @@
 #pragma once
-
-# include "newmenu/newmenu.h"
+# include <afxcontrolbars.h>
 #include "ComboBoxXP.h"
 # include "MasEdit.h"
-#include "SortHeaderCtrl.h"
+
+
 //***************************************************************************
 //
 // AUTHOR:  JUHU
@@ -14,9 +14,7 @@
 //
 //***************************************************************************
 
-typedef class CListCtrlXP CMyListCtrl;
-
-class  __COMPONENTES_EXPORT__ CListCtrlXP : public CListCtrl
+class  __COMPONENTES_EXPORT__ CListCtrlXP : public CMFCListCtrl
 {
 	DECLARE_DYNCREATE(CListCtrlXP);
 	// Construction
@@ -45,7 +43,8 @@ public:
 		tipocol_numero=1,
 		tipocol_double=2,
 		tipocol_fechahora=3,
-		tipocol_hora=5
+		tipocol_hora=5,
+		tipocol_textomultiline,
 	};
 	enum {
 		tipo_edit_combo=1,
@@ -57,7 +56,7 @@ protected:
 	CXWinVersion		m_WVersion;
 	CPtrArray				m_pArrayControles;
 	CUIntArray				m_pArrayColumnas;
-	CNewMenu				*m_hMenuContextual;
+	CMenu				*m_hMenuContextual;
 	bool					m_bDropDown;
 	int		m_nMaxRow;
 	int		m_nMaxCol;
@@ -74,7 +73,6 @@ protected:
 	int		m_nRow;
 	CWnd	*m_pParent;
 	CString		m_szVacia;
-	CSortHeaderCtrl *m_header;
 
 // Operations
 public:
@@ -363,9 +361,15 @@ public:
 	// Notes:		None.
 	//***********************************************************************
 	CString GetMensaje();
+
+	virtual BOOL GetSubItemRect(_In_ int iItem, _In_ int iSubItem, _In_ int nArea, _Out_ CRect& ref) const;
+	virtual BOOL GetItemRect(_In_ int nItem, _Out_ LPRECT lpRect, _In_ UINT nCode) const;
+	virtual int HitTest(_In_ CPoint pt, _In_opt_ UINT* pFlags = NULL) const;
+	BOOL EnsureColumnVisible(int nCol, bool bPartialOK);
+
 	CWnd	*GetControl( int col);
-	CNewMenu *GetMenuContextual();
-	CNewMenu *GetMenuContextual(CNewMenu *menu);
+	CMenu *GetMenuContextual();
+	CMenu *GetMenuContextual(CMenu *menu);
 	virtual int		InsertItem(int nItem,LPCTSTR lpszItem,int nImage);
 	virtual BOOL	PreTranslateMessage(MSG* pMsg);
 	virtual void	DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
@@ -387,7 +391,9 @@ public:
 	afx_msg LRESULT OnCopyValue(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnRealUpdateCombo(WPARAM wParam, LPARAM lParam);
 	virtual BOOL SetItemText(int nItem,int nSubItem,LPCTSTR lpszText);
-
+	int GetSortedColumn();
+	bool GetSortedColumnOrder();
+	void SortList(const int nColumn, const bool bAscending);
 
 protected:
 	void	HideAll();
@@ -395,15 +401,10 @@ protected:
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	bool	GetSelItem(int &x, int &y);
-	BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
-	afx_msg void OnHeaderClicked(NMHDR* pNMHDR, LRESULT* pResult);
 	//sorting attributes
-	int		m_nSortedColumn;
-	BOOL	m_bSortAscending;
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
-	virtual void PreSubclassWindow();
 	LRESULT	Notify( DWORD dwMessage, int nItem, int nCol );
-
+	
 public:
 	// Text
 	__declspec(property(get=GetText,put=SetText))	CString	Items[][];
@@ -415,5 +416,3 @@ public:
 
 DECLARE_MESSAGE_MAP()
 };
-
-

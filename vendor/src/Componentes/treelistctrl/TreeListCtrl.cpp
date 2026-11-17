@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 # include "Componentes.h"
-#include "memdc.h"
 #include "treelistctrl/TreeListHeaderCtrl.h"
 #include "treelistctrl/TreeListCtrl.h"
 #include "ResourceDLL.h"
@@ -102,8 +101,10 @@ CTreeListCtrl::CTreeListCtrl() :
 
 CTreeListCtrl::~CTreeListCtrl()
 {
-	if(m_pThread) 
-		delete m_pThread;
+	if(m_pThread) {
+		m_pThread->Kill();
+		m_pThread=NULL;
+	}
 	// deconstruct
 	m_wndHeader.DestroyWindow();
 
@@ -230,7 +231,6 @@ void CTreeListCtrl::OnDestroy()
 {
 	if( m_pThread) {
 		m_pThread->Kill();
-		delete m_pThread;
 		m_pThread= NULL;
 	}
 	CWnd::OnDestroy();
@@ -271,18 +271,19 @@ void CTreeListCtrl::SetAllScroll()
 	BOOL bHorzScroll = FALSE;
 	BOOL bVertScroll = FALSE;
 
-	if( rcPreClient.Width() < GetWidth() )
+	if( rcPreClient.Width() < GetWidth())
 	{
 		bHorzScroll = TRUE;
 
-		if( rcPreClient.Height() - cy < m_wndHeader.GetHeaderHeight() + GetVisibleCount() * GetItemHeight() )
+		if( rcPreClient.Height() - cy < m_wndHeader.GetHeaderHeight() + GetVisibleCount() * GetItemHeight() ) {
 			bVertScroll = TRUE;
+		}
 	}
 	else if( rcPreClient.Height() < m_wndHeader.GetHeaderHeight() + GetVisibleCount() * GetItemHeight() )
 	{
 		bVertScroll = TRUE;
 
-		if( rcPreClient.Width() - cx < GetWidth() )
+		if( rcPreClient.Width() - cx < GetWidth())
 			bHorzScroll = TRUE;
 	}
 
@@ -340,8 +341,8 @@ void CTreeListCtrl::SetHorzScroll( CRect* pPreClient )
 		si.nMax		= 0;
 		si.nPage	= 0;
 		si.nPos		= 0;
-		if(si.nMax==0)
-			return;
+		/*if(si.nMax==0)
+			return;*/
 		si.fMask	=  SIF_PAGE | SIF_RANGE | SIF_POS;
 	}
 	SetScrollInfo( SB_HORZ, &si, TRUE );
@@ -353,6 +354,7 @@ void CTreeListCtrl::SetVertScroll( CRect* pPreClient )
 	SCROLLINFO si;
 	GetScrollInfo( SB_VERT, &si, SIF_ALL );
 
+	int visibles= GetVisibleCount();
 	if( pPreClient->Height() < m_wndHeader.GetHeaderHeight() + GetVisibleCount() * GetItemHeight() || si.nPos != si.nMin )
 	{
 		if(si.nMax== GetVisibleCount() - 1)
@@ -528,7 +530,7 @@ void CTreeListCtrl::Layout()
 	// layout size
 	if( !IsWindow( m_wndHeader.GetSafeHwnd() ) )
 		return;
-	SetAllScroll();
+	// SetAllScroll();
 	GetClientRect( &m_rcClient );
 	m_rcHeader		= m_rcClient;
 	m_wndHeader.SendMessage( HDM_LAYOUT, (WPARAM)0, (LPARAM)&m_rcHeader );
@@ -795,7 +797,10 @@ void CTreeListCtrl::SetItemState(HTREELISTITEM pItem, DWORD dwAddState, DWORD dw
 	// set status of item specified by pItem
 	ASSERT( pItem != NULL );
 	m_pItemMap.SetItemState(pItem , dwAddState, dwRemoveState );
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 void CTreeListCtrl::GetItemImage( HTREELISTITEM pItem, int& nImage, int& nExpandImage, int& nSelectedImage, int& nExpandSelectedImage )
@@ -811,7 +816,10 @@ void CTreeListCtrl::SetItemImage( HTREELISTITEM pItem, int nImage, int nExpandIm
 	ASSERT( pItem != NULL );
 	m_pItemMap.SetItemState(pItem, TLIS_SHOWTREEIMAGE);
 	m_pItemMap.SetItemImage(pItem, nImage, nExpandImage, nSelectedImage, nExpandSelectedImage );
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }	
 
 LPCTSTR	CTreeListCtrl::GetItemText( HTREELISTITEM pItem, int nSubItem )
@@ -826,7 +834,9 @@ BOOL CTreeListCtrl::SetItemText( HTREELISTITEM pItem, LPCTSTR lpszText, int nSub
 	// set text of item specified by pItem
 	ASSERT( pItem != NULL );
 	BOOL bRet = m_pItemMap.SetItemText(pItem, lpszText, nSubItem);
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, nSubItem, rect, false))
+		InvalidateRect(rect);
 	return bRet;
 }
 
@@ -838,13 +848,19 @@ COLORREF CTreeListCtrl::GetItemColor(HTREELISTITEM pItem) {
 void CTreeListCtrl::SetItemColor(HTREELISTITEM pItem, COLORREF color) {
 
 	m_pItemMap.SetItemColor(pItem, color);
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 void CTreeListCtrl::SetItemBold(HTREELISTITEM pItem, bool bold/*=true*/) {
 
 	m_pItemMap.SetItemBold(pItem, bold);
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 int	CTreeListCtrl::GetChildCount(HTREELISTITEM pItem) {
@@ -976,7 +992,10 @@ void CTreeListCtrl::SetCheck( HTREELISTITEM pItem, BOOL bCheck )
 		SetItemChildStatus( pItem, TLIS_CHECKED_NULL, TLIS_CHECKED );
 		SetItemParentStatus( pItem, TLIS_CHECKEDMASK );
 	}
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 int CTreeListCtrl::GetLock( HTREELISTITEM pItem )
@@ -1001,7 +1020,10 @@ void CTreeListCtrl::SetLock( HTREELISTITEM pItem, BOOL bLock )
 		SetItemChildStatus( pItem, TLIS_LOCKED_NULL, TLIS_LOCKED );
 		SetItemParentStatus( pItem, TLIS_LOCKEDMASK );
 	}
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 BOOL CTreeListCtrl::GetItemRect( HTREELISTITEM pItem, LPRECT lpRect )
@@ -1912,7 +1934,7 @@ void CTreeListCtrl::StatCollapse( HTREELISTITEM pItem )
 
 void CTreeListCtrl::UpdateSelectionForRect(LPCRECT pRect, UINT nFlags)
 {
-	CWaitCursor wait;
+	// CWaitCursor wait;
 	CRect rect;
 
 	SelectItem(NULL);
@@ -2068,7 +2090,10 @@ void CTreeListCtrl::SetItemCheck( HTREELISTITEM pItem, BOOL bAutoCheck )
 		SetItemParentStatus( pItem, TLIS_CHECKEDMASK );
 	}
 
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	// Invalidate();
 }
 
 void CTreeListCtrl::SetItemLock( HTREELISTITEM pItem, BOOL bAutoLock )
@@ -2096,8 +2121,10 @@ void CTreeListCtrl::SetItemLock( HTREELISTITEM pItem, BOOL bAutoLock )
 		SetItemChildStatus( pItem, TLIS_LOCKED_NULL, TLIS_LOCKED );
 		SetItemParentStatus( pItem, TLIS_LOCKEDMASK );
 	}
-
-	Invalidate();
+	CRect rect;
+	if(GetItemRect(pItem, rect))
+		InvalidateRect(rect);
+	//Invalidate();
 }
 
 void CTreeListCtrl::SetItemParentStatus( HTREELISTITEM pItem, DWORD dwMask )
@@ -2160,28 +2187,7 @@ HTREELISTITEM CTreeListCtrl::GetFirstShowItem( int nShowItem )
 	// retrieve first visible item after n visible items
 	if( nShowItem < 0 )
 		return NULL;
-
-	if( nShowItem >= m_pItemMap.GetVisibleChildren(m_pRootItem))
-		return NULL;
-	
-	HTREELISTITEM pItem = GetChildItem(m_pRootItem);
-	while( nShowItem != 0 )
-	{
-		ASSERT( nShowItem > 0 );
-
-		if( nShowItem < m_pItemMap.GetVisibleChildren(pItem))
-		{
-			nShowItem --;
-			pItem = GetChildItem(pItem);
-		}
-		else
-		{
-			nShowItem -= m_pItemMap.GetVisibleChildren(pItem);
-			pItem = GetNextSiblingItem(pItem);
-		}
-	}
-
-	return pItem;
+	return m_pItemMap.GetFirstShowItem(nShowItem);
 }
 
 HTREELISTITEM CTreeListCtrl::GetNextShowItem( HTREELISTITEM pItem, BOOL bChild )
@@ -2276,8 +2282,8 @@ void CTreeListCtrl::OnPaint()
 
 	if( GetState( TLS_OFFSCREENBUFFER ) )
 	{
-		CMemDC TreeListDC(&dc);
-		DrawCtrl( &TreeListDC );
+		CMemDC TreeListDC(dc,this);
+		DrawCtrl( &TreeListDC.GetDC() );
 	}
 	else
 	{
@@ -3199,7 +3205,6 @@ void CTreeListCtrl::OnNcPaint()
 {
 	// draw 3d frame rect
 	Default();
-
 	if( !(CWnd::GetExStyle()&WS_EX_CLIENTEDGE) )
 	{
 		CWindowDC dc(this);
@@ -3243,7 +3248,7 @@ BOOL CTreeListCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 }
 
 
-BOOL CTreeListCtrl::InsertColumn( LPCTSTR lpszColumnHeading, DWORD dwFormat, int nWidth, int iImage, int nMin, int nMax)
+int CTreeListCtrl::InsertColumn( LPCTSTR lpszColumnHeading, DWORD dwFormat, int nWidth, int iImage, int nMin, int nMax)
 {
 	// insert a column
 	if( GetChildItem(m_pRootItem)) {
@@ -3284,7 +3289,7 @@ BOOL CTreeListCtrl::InsertColumn( LPCTSTR lpszColumnHeading, DWORD dwFormat, int
 	Layout();
 	Invalidate();
 
-	return TRUE;
+	return nCol;
 }
 
 BOOL CTreeListCtrl::DeleteColumn( int iCol )
@@ -3337,13 +3342,13 @@ int CTreeListCtrl::InsertItem( int nItem, LPCTSTR lpszItem )
 
 	if( GetChildItem(m_pRootItem) == NULL )
 	{
-		InsertItemNew( lpszItem, m_pRootItem );
+		InsertItemX( m_pRootItem, m_pItemMap.AddItemNew(GetColumns(), lpszItem, m_pRootItem));
 		return 0;
 	}
 
 	if( nItem == 0 )
 	{
-		InsertItemFirst( lpszItem, m_pRootItem );
+		InsertItemX( m_pRootItem, m_pItemMap.AddItemFirst(GetColumns(), lpszItem, m_pRootItem));
 		return 0;
 	}
 
@@ -3373,7 +3378,7 @@ BOOL CTreeListCtrl::DeleteItem( int nItem )
 
 HTREELISTITEM CTreeListCtrl::InsertItem( LPCTSTR lpszItem, HTREELISTITEM pParent, HTREELISTITEM pInsertAfter )
 {
-	CWaitCursor wait;
+	// CWaitCursor wait;
 	HTREELISTITEM retorno=NULL;
 	// insert an new item
 	ASSERT( m_dwStyle&TLC_TREELIST || pParent == TLI_ROOT || pParent == m_pRootItem ) ;
@@ -3387,15 +3392,13 @@ HTREELISTITEM CTreeListCtrl::InsertItem( LPCTSTR lpszItem, HTREELISTITEM pParent
 	// no child item
 	if( GetChildItem(pParent) == NULL )
 	{
-		retorno= InsertItemNew( lpszItem, pParent );
-		return retorno;
+		return InsertItemX( pParent, m_pItemMap.AddItemNew(GetColumns(), lpszItem, pParent));
 	}
 
 	// add befor first child item
 	if( pInsertAfter == TLI_FIRST )
 	{
-		retorno= InsertItemFirst( lpszItem, pParent );
-		return retorno;
+		return InsertItemX( pParent, m_pItemMap.AddItemFirst(GetColumns(), lpszItem, pParent));
 	}
 
 	// add befor or after a child item by sorting
@@ -3403,11 +3406,9 @@ HTREELISTITEM CTreeListCtrl::InsertItem( LPCTSTR lpszItem, HTREELISTITEM pParent
 	{
 		HTREELISTITEM pPrevItem = GetSortChildItem( pParent );
 		if( pPrevItem == NULL ) {
-			retorno= InsertItemFirst( lpszItem, pParent );
-			return retorno;
+			return InsertItemX( pParent, m_pItemMap.AddItemFirst(GetColumns(), lpszItem, pParent));
 		} else {
-			retorno= InsertItemNext( lpszItem, pParent, pPrevItem );
-			return retorno;
+			return InsertItemX( pParent, m_pItemMap.AddItemNext(GetColumns(), lpszItem, pParent, pPrevItem));
 		}
 	}
 
@@ -3415,8 +3416,7 @@ HTREELISTITEM CTreeListCtrl::InsertItem( LPCTSTR lpszItem, HTREELISTITEM pParent
 	if( pInsertAfter == TLI_LAST )
 	{
 		HTREELISTITEM pPrevItem = GetLastChildItem( pParent );
-		retorno= InsertItemNext( lpszItem, pParent, pPrevItem );
-		return retorno;
+		return InsertItemX( pParent, m_pItemMap.AddItemNext(GetColumns(), lpszItem, pParent, pPrevItem));
 	}
 	
 	// add after some child item
@@ -3424,11 +3424,9 @@ HTREELISTITEM CTreeListCtrl::InsertItem( LPCTSTR lpszItem, HTREELISTITEM pParent
 		HTREELISTITEM pPrevItem = GetValidChildItem( pParent, pInsertAfter );
 		if( pPrevItem == NULL ) {
 			
-			retorno=InsertItemFirst( lpszItem, pParent );
-			return retorno;
+			return InsertItemX( pParent, m_pItemMap.AddItemFirst(GetColumns(), lpszItem, pParent));
 		} else {
-			retorno=InsertItemNext( lpszItem, pParent, pPrevItem );
-			return retorno;
+			return InsertItemX( pParent, m_pItemMap.AddItemNext(GetColumns(), lpszItem, pParent, pPrevItem));
 		}
 	}
 	return NULL;
@@ -3559,6 +3557,7 @@ BOOL CTreeListCtrl::DeleteAllItems()
 	if(m_pThread) {
 		SetError(NULL, "Listo");
 		m_pThread->Kill(true);
+		m_pThread=NULL;
 	}
 	m_nOrderBy= -1;
 	m_pKeys.RemoveAll();
@@ -3672,81 +3671,6 @@ BOOL CTreeListCtrl::Select( HTREELISTITEM pItem, int nCode )
 	return TRUE;
 }
 
-HTREELISTITEM CTreeListCtrl::InsertItemNew( LPCTSTR lpszItem, HTREELISTITEM pParent )
-{
-	// insert a new item
-	ASSERT( pParent != NULL );
-	HTREELISTITEM pNewItem= m_pItemMap.AddItem(GetColumns());
-	m_pItemMap.SetItemText(pNewItem, lpszItem, 0);
-	m_pItemMap.SetParentItem(pNewItem, pParent);
-	m_pItemMap.SetItemLevel(pNewItem, m_pItemMap.GetItemLevel(pParent) + 1);
-
-	if( m_pItemMap.GetItemCheck(pParent) == 1 )
-		m_pItemMap.SetItemCheck(pNewItem, TRUE );
-
-	if( m_pItemMap.GetItemLock(pParent) == 1 )
-		m_pItemMap.SetItemLock(pNewItem, TRUE );
-
-	m_pItemMap.SetChildItem(pParent, pNewItem);
-	m_pItemMap.GetItemState(pParent, TLIS_EXPANDEDONCE );
-
-	return InsertItemX( pParent, pNewItem );
-}
-
-HTREELISTITEM CTreeListCtrl::InsertItemFirst( LPCTSTR lpszItem, HTREELISTITEM pParent )
-{
-	// insert a child item before first child item
-	ASSERT( pParent != NULL );
-
-	HTREELISTITEM pNewItem= m_pItemMap.AddItem(GetColumns());
-	m_pItemMap.SetItemText(pNewItem, lpszItem, 0);
-
-	HTREELISTITEM pFirstItem;
-	pFirstItem	= GetChildItem(pParent);
-
-	m_pItemMap.SetParentItem(pNewItem, GetParentItem(pFirstItem));
-	m_pItemMap.SetNextSiblingItem(pNewItem, pFirstItem);
-	m_pItemMap.SetItemLevel(pNewItem, m_pItemMap.GetItemLevel(pFirstItem));
-
-	if( m_pItemMap.GetItemCheck(pParent) == 1 )
-		m_pItemMap.SetItemCheck(pNewItem, TRUE );
-
-	if( m_pItemMap.GetItemLock(pParent) == 1 )
-		m_pItemMap.SetItemLock(pNewItem, TRUE );
-	
-	m_pItemMap.SetPrevSiblingItem(pFirstItem, pNewItem);
-	m_pItemMap.SetChildItem(pParent, pNewItem);
-
-	return InsertItemX( pParent, pNewItem );
-}
-
-HTREELISTITEM CTreeListCtrl::InsertItemNext( LPCTSTR lpszItem, HTREELISTITEM pParent, HTREELISTITEM pInsertAfter )
-{
-	// insert a child item after some item
-	ASSERT( pParent != NULL && pInsertAfter != NULL );
-
-	HTREELISTITEM pNewItem= m_pItemMap.AddItem(GetColumns());
-	m_pItemMap.SetItemText(pNewItem, lpszItem,0);
-
-	m_pItemMap.SetParentItem(pNewItem, GetParentItem(pInsertAfter));
-	m_pItemMap.SetNextSiblingItem(pNewItem, GetNextSiblingItem(pInsertAfter));
-	m_pItemMap.SetPrevSiblingItem(pNewItem, pInsertAfter);
-	m_pItemMap.SetItemLevel(pNewItem, m_pItemMap.GetItemLevel(pInsertAfter));
-
-	if( m_pItemMap.GetItemCheck(pParent) == 1 )
-		m_pItemMap.SetItemCheck(pNewItem, TRUE );
-
-	if( m_pItemMap.GetItemLock(pParent) == 1 )
-		m_pItemMap.SetItemLock(pNewItem, TRUE );
-
-	m_pItemMap.SetNextSiblingItem(pInsertAfter, pNewItem);
-
-	if( m_pItemMap.GetNextSiblingItem(pNewItem) != NULL )
-		m_pItemMap.SetPrevSiblingItem(m_pItemMap.GetNextSiblingItem(pNewItem),pNewItem);
-
-	return InsertItemX( pParent, pNewItem );
-}
-
 HTREELISTITEM CTreeListCtrl::InsertItemX( HTREELISTITEM pParent, HTREELISTITEM pNewItem )
 {
 	// insert an item
@@ -3756,9 +3680,16 @@ HTREELISTITEM CTreeListCtrl::InsertItemX( HTREELISTITEM pParent, HTREELISTITEM p
 	StatChildAdd( pNewItem, m_pItemMap.GetChildCount(pNewItem), m_pItemMap.GetVisibleChildren(pNewItem));
 	m_pItemMap.SetItemImage(pNewItem, 0, 1, 2, 3 );
 
-	Layout();
-	Invalidate();
-
+	CRect rect;
+	if(GetItemRect(pNewItem, rect)) {
+		Layout();
+		CRect clientrect;
+		GetClientRect(clientrect);
+		rect.bottom= clientrect.bottom;
+		InvalidateRect(rect);
+	} else {
+		SetAllScroll();
+	}
 	return pNewItem;
 }
 
@@ -4213,6 +4144,7 @@ void CTreeListCtrl::Sort(int columna) {
 	if( m_pThread) {
 
 		m_pThread->Kill(true);
+		m_pThread=NULL;
 		thread= true;
 		SetError(NULL, "Listo");
 	}
@@ -5483,6 +5415,7 @@ void CTreeListCtrl::ShowStat() {
 	CWaitCursor wait;
 	if(m_pThread) {
 		m_pThread->Kill();
+		m_pThread=NULL;
 	}
 	if(m_bCanStat) {
 		m_pThread= new CThreadTreeStat(m_pThread);
@@ -5495,7 +5428,7 @@ void CTreeListCtrl::ShowStat() {
 void CTreeListCtrl::SetMessageLista( CString message) {
 
 	m_szVacia= message;
-	if(!GetRootItem())
+	if(GetItemCount()<2)
 		Invalidate();
 }
 
@@ -5562,7 +5495,7 @@ LRESULT CTreeListCtrl::OnCut(WPARAM wParam, LPARAM lParam) {
 	return 0;
 }
 
-CNewMenu *CTreeListCtrl::GetMenuContextual(CNewMenu	*menu) {
+CMenu *CTreeListCtrl::GetMenuContextual(CMenu	*menu) {
 	
 	ASSERT(menu);
 	if( GetSelectedItem()) {
@@ -5574,12 +5507,12 @@ CNewMenu *CTreeListCtrl::GetMenuContextual(CNewMenu	*menu) {
 	return menu;
 }
 
-CNewMenu *CTreeListCtrl::GetMenuContextual() {
+CMenu *CTreeListCtrl::GetMenuContextual() {
 
 	if(m_hMenuContextual)
 		delete m_hMenuContextual;
 
-	m_hMenuContextual= new CNewMenu();
+	m_hMenuContextual= new CMenu();
 
 	m_hMenuContextual->CreatePopupMenu();
 	return GetMenuContextual(m_hMenuContextual);
@@ -5661,9 +5594,8 @@ HTREELISTITEM CTreeListCtrl::InsertSorted(const CString &texto, HTREELISTITEM pP
 
 		temp= m_pItemMap.GetItemText(item, 0);
 		cmp=temp.Compare(texto);
-		if(cmp==0 && !duplicate) {
+		if(cmp==0 && !duplicate) 
 			return item;
-		}
 		if(cmp>0) {
 
 			item= InsertItem(texto, pParent, GetPrevSiblingItem(item) ? GetPrevSiblingItem(item) : TLI_FIRST);
@@ -5696,7 +5628,7 @@ void CTreeListCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	KillTimer(100);
 	if( isprint(nChar)) {
 
-		CWaitCursor wait;
+		// CWaitCursor wait;
 
 		m_szCadena+=(char)nChar;
 		m_szCadena.MakeLower();

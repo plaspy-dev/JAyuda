@@ -54,6 +54,7 @@
 # include "OleRichEditCtrl.h"
 # include "ImageDataObject.h"
 
+
 class CIOFileApp : public CWinApp
 {
 public:
@@ -75,7 +76,8 @@ __IOFILE_EXPORT__  bool Exportar(CMyListCtrl *pLista,CString Titulo, bool showfi
 __IOFILE_EXPORT__  bool Exportar(CTreeListCtrl *pTree,CString Titulo, bool showfile=false);
 __IOFILE_EXPORT__  DWORD GetLicenceDlg();
 __IOFILE_EXPORT__  DWORD GetProgressDlg(CStringArray *querys, CStringArray *mensajes, const CString titulo,bool silent=false);
-
+__IOFILE_EXPORT__  CPtrArray *SortComponentes(CFormView *view, int &horizontales);
+__IOFILE_EXPORT__  CString GetCommonPath(const CString &ruta);
 
 #ifndef _IOFILE_DLL_
 	#ifdef _DEBUG

@@ -9,21 +9,17 @@
 # include "draw.h"
 # include "SortClass.h"
 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
 
-IMPLEMENT_DYNCREATE(CListCtrlXP, CListCtrl)
+IMPLEMENT_DYNCREATE(CListCtrlXP, CMFCListCtrl)
 
 CListCtrlXP::CListCtrlXP()
 {
 	FUNCTION_STACK_TRACE("FFFFE07D");
-	// ordenacion
-	m_nSortedColumn= -1;
-	m_bSortAscending= true;
 
 	m_nMaxRow= 0;
 	m_nRow = -1;
@@ -31,8 +27,7 @@ CListCtrlXP::CListCtrlXP()
 	m_nCol = -1;
 	m_bScrolling= false;
 	m_bCanClean= false;
-
-	m_header= NULL;
+	
 	m_bOrdenable= false;
 	m_bEditable= false;
 	m_pParent= NULL;
@@ -52,20 +47,15 @@ CListCtrlXP::~CListCtrlXP()
 		handle= (CWnd *) m_pArrayControles.GetAt(i);
 		delete handle;
 	}
-	if( m_header) {
-		delete m_header;
-		m_header= NULL;
-	}
 	if( m_hMenuContextual) 
 		delete m_hMenuContextual;
 }
 
-BEGIN_MESSAGE_MAP(CListCtrlXP, CListCtrl)
+BEGIN_MESSAGE_MAP(CListCtrlXP, CMFCListCtrl)
 	ON_WM_VSCROLL()
 	ON_WM_HSCROLL()
 	ON_NOTIFY_REFLECT(LVN_INSERTITEM, OnLvnInsertitem)
 	ON_NOTIFY_REFLECT(LVN_DELETEITEM, OnLvnDeleteitem)
-	ON_NOTIFY(HDN_ITEMCLICK, 0, OnHeaderClicked)
 	ON_WM_LBUTTONDBLCLK()
 	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, OnLvnColumnclick)
 	ON_NOTIFY_REFLECT(LVN_DELETEALLITEMS, OnLvnDeleteallitems)
@@ -97,7 +87,7 @@ int CListCtrlXP::InsertItem(int nItem,LPCTSTR lpszItem,int nImage) {
 	
 	if(nItem==-1)
 		nItem= GetItemCount();
-	return CListCtrl::InsertItem(nItem, lpszItem, nImage);
+	return CMFCListCtrl::InsertItem(nItem, lpszItem, nImage);
 }
 
 void CListCtrlXP::SetEditable(bool editable) {
@@ -181,6 +171,16 @@ void CListCtrlXP::LoadFromXML( CString Archivo) {
 	r.Close();
 }
 
+BOOL CListCtrlXP::GetItemRect(_In_ int nItem, _Out_ LPRECT lpRect, _In_ UINT nCode) const
+{
+	return CListCtrl::GetItemRect(nItem, lpRect, nCode);
+}
+
+BOOL CListCtrlXP::GetSubItemRect(_In_ int iItem, _In_ int iSubItem, _In_ int nArea, _Out_ CRect& ref) const {
+
+	return CListCtrl::GetSubItemRect(iItem, iSubItem, nArea, ref);
+}
+
 CComboBoxXP	*CListCtrlXP::SetCombo( unsigned int col) {
 
 	FUNCTION_STACK_TRACE("FFFFE084");
@@ -227,15 +227,21 @@ CEdit *CListCtrlXP::SetEdit( unsigned int col, int tipo/*=0*/) {
 
 	FUNCTION_STACK_TRACE("FFFFE085");
 	CEdit *pEdit=NULL;
-	DWORD dwStyle = WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS|WS_TABSTOP|WS_BORDER|ES_LEFT|ES_AUTOHSCROLL;
+	DWORD dwStyle = WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS|WS_TABSTOP|WS_BORDER|ES_LEFT;
 
 	if(tipo==tipocol_double) {
-		dwStyle|= ES_RIGHT | ES_NUMBER;
+		dwStyle|= ES_RIGHT | ES_AUTOHSCROLL;
 		pEdit= new CEditFloat();
 	} else {
-		if(tipo==tipocol_numero) 
-			dwStyle|= ES_RIGHT | ES_NUMBER;
-		pEdit = new CmEdit();
+		if(tipo==tipocol_textomultiline) {
+			dwStyle|= ES_MULTILINE | ES_AUTOVSCROLL;
+			pEdit = new CEditXP();
+		} else {
+			dwStyle|=ES_AUTOHSCROLL;
+			if(tipo==tipocol_numero) 
+				dwStyle|= ES_RIGHT | ES_NUMBER;
+			pEdit = new CmEdit();
+		}
 	}
 
 	CRect rect;
@@ -281,7 +287,7 @@ int	CListCtrlXP::GetTipoControl(unsigned int col) {
 	FUNCTION_STACK_TRACE("FFFFE088");
 	CWnd *handle= GetControl(col);
 	if( handle) {
-		if( handle->IsKindOf(RUNTIME_CLASS(CmEdit)))
+		if( handle->IsKindOf(RUNTIME_CLASS(CEditXP)))
 			return tipo_edit_edit;
 		else if(handle->IsKindOf(RUNTIME_CLASS(CComboBox)))
 			return tipo_edit_combo;
@@ -293,7 +299,7 @@ int	CListCtrlXP::GetTipoControl(unsigned int col) {
 BOOL CListCtrlXP::PreTranslateMessage(MSG* pMsg) 
 {
 
-	if( m_bEditable) {
+	if( m_bEditable && GetItemCount()) {
 		if(pMsg->message == WM_KEYDOWN)
 		{
 			if( pMsg->wParam== VK_TAB || pMsg->wParam== VK_RETURN) {
@@ -311,7 +317,7 @@ BOOL CListCtrlXP::PreTranslateMessage(MSG* pMsg)
 							m_nCol=-1;
 							m_nRow=-1;
 							HideAll();
-							return CListCtrl::PreTranslateMessage(pMsg);
+							return CMFCListCtrl::PreTranslateMessage(pMsg);
 						}
 					}
 				}
@@ -327,7 +333,9 @@ BOOL CListCtrlXP::PreTranslateMessage(MSG* pMsg)
 							m_nCol = m_nMaxCol;
 							m_nRow = m_nMaxRow-1;
 							HideAll();
-							return CListCtrl::PreTranslateMessage(pMsg);
+							m_nCol=-1;
+							m_nRow=-1;
+							return CMFCListCtrl::PreTranslateMessage(pMsg);
 						}
 		
 					}
@@ -359,7 +367,7 @@ BOOL CListCtrlXP::PreTranslateMessage(MSG* pMsg)
 			}
 		}
 	}
-	return CListCtrl::PreTranslateMessage(pMsg);
+	return CMFCListCtrl::PreTranslateMessage(pMsg);
 }
 
 void CListCtrlXP::OnSetText(bool notify/*=true*/)
@@ -368,7 +376,7 @@ void CListCtrlXP::OnSetText(bool notify/*=true*/)
 	if( !m_bEditable)
 		return;
 	CWnd *handle= GetControl(m_nCol);
-	if( handle) {
+	if( handle && handle->IsWindowVisible()) {
 
 		CString szText;
 		handle->GetWindowText(szText);
@@ -401,6 +409,51 @@ void CListCtrlXP::SetCanClean(bool canclean) {
 	m_bCanClean= canclean;
 }
 
+BOOL CListCtrlXP::EnsureColumnVisible(int nCol, bool bPartialOK)
+{
+	if (nCol < 0 || nCol >= GetHeaderCtrl().GetItemCount())
+		return FALSE;
+
+	CRect rcHeader;
+	if (GetHeaderCtrl().GetItemRect(nCol, rcHeader)==FALSE)
+		return FALSE;
+
+	CRect rcClient;
+	GetClientRect(&rcClient);
+
+	int nOffset = GetScrollPos(SB_HORZ);
+
+	if(bPartialOK)
+	{
+		if((rcHeader.left - nOffset < rcClient.right)
+			&& (rcHeader.right - nOffset > 0) )
+		{
+			return TRUE;
+		}
+	}
+
+	int nScrollX = 0;
+
+	if((rcHeader.Width() > rcClient.Width()) || (rcHeader.left - nOffset < 0))
+	{
+		nScrollX = rcHeader.left - nOffset;
+	}
+	else if(rcHeader.right - nOffset > rcClient.right)
+	{
+		nScrollX = rcHeader.right - nOffset - rcClient.right;
+	}
+
+	if(nScrollX != 0)
+	{
+		CSize size(nScrollX, 0);
+		if (Scroll(size)==FALSE)
+			return FALSE;
+	}
+
+	return TRUE;
+
+}
+
 void CListCtrlXP::ShowControl() {
 
 	FUNCTION_STACK_TRACE("FFFFE08D");
@@ -419,6 +472,10 @@ void CListCtrlXP::ShowControl() {
 	
 	ASSERT( handle);
 	EnsureVisible(m_nRow,true);
+	EnsureColumnVisible(m_nCol, false);
+	GetSubItemRect(m_nRow,m_nCol,LVIR_BOUNDS,rect);
+
+		
 	GetSubItemRect(m_nRow,m_nCol,LVIR_LABEL,rect);
 	temp= GetItemText( m_nRow, m_nCol);
 	handle->SetWindowText(temp);
@@ -465,7 +522,7 @@ void CListCtrlXP::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	FUNCTION_STACK_TRACE("FFFFE090");
 	OnSetText();
 	HideAll();
-	CListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
+	CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
 void CListCtrlXP::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) 
@@ -473,21 +530,7 @@ void CListCtrlXP::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	FUNCTION_STACK_TRACE("FFFFE081");
 	OnSetText();
 	HideAll();
-	CListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
-}
-
-BOOL CListCtrlXP::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	FUNCTION_STACK_TRACE("FFFFE082");
-	switch (((NMHDR*)lParam)->code)
-    {
-        case HDN_BEGINTRACKW:
-        case HDN_BEGINTRACKA:
-		{
-            *pResult = 0;
-		}
-    }
-    return CListCtrl::OnNotify(wParam, lParam, pResult);
+	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
 void CListCtrlXP::OnLvnInsertitem(NMHDR *pNMHDR, LRESULT *pResult)
@@ -497,7 +540,7 @@ void CListCtrlXP::OnLvnInsertitem(NMHDR *pNMHDR, LRESULT *pResult)
 	m_nMaxRow= GetItemCount();
 	HideAll();
 	if( m_nMaxRow==1) {
-		// if(!m_WVersion.IsVistaorLater())
+		
 		ModifyStyle(0, LVS_OWNERDRAWFIXED);
 		Invalidate();
 	}
@@ -539,40 +582,6 @@ int	CListCtrlXP::GetColumnType(int columna) {
 	return tipo-1;
 }
 
-void CListCtrlXP::OnHeaderClicked(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	FUNCTION_STACK_TRACE("FFFFE085");
-	HD_NOTIFY *phdNotify = (HD_NOTIFY *)pNMHDR;
-	if( !m_bOrdenable || m_nNoSort==phdNotify->iButton || GetItemCount()<2) 
-		return;
-
-	CWaitCursor wait;
-
-	m_bSortAscending = (phdNotify->iButton == m_nSortedColumn) ? !m_bSortAscending : TRUE;
-	m_nSortedColumn = phdNotify->iButton;
-	if( m_header) 
-		m_header->SetSortArrow(m_nSortedColumn, m_bSortAscending);
-	int tipo=1;
-	if( m_nColumType.GetCount()>m_nSortedColumn) 
-		tipo= m_nColumType.GetAt(m_nSortedColumn);
-	CSortClass csc(this, m_nSortedColumn);
-	csc.Sort(m_bSortAscending, tipo);
-
-	int index= GetNextItem(-1, LVIS_SELECTED);
-	if( index!=-1)
-		EnsureVisible(index, true);
-	
-	// envia notificacion de la columna
-	// Notify(LVN_COLUMNCLICK, -1, m_nSortedColumn);
-	// verificar como enviar el comando y no usar el reflejo
-
-	// obsoleto no usar
-	GetParent()->SendMessage(WM_LISTANOTIFICACION, -1, m_nSortedColumn);
-	GetParent()->SendMessage(WM_LISTANOTIFICACIONEX, MAKELONG(m_nSortedColumn, -1), GetDlgCtrlID());
-	if( pResult)
-		*pResult = 0;
-}
-
 //////////////////////////////////////////////////////////////////////
 // GetColumnCount()
 // Parameters:  None.
@@ -581,30 +590,12 @@ void CListCtrlXP::OnHeaderClicked(NMHDR* pNMHDR, LRESULT* pResult)
 //////////////////////////////////////////////////////////////////////
 int CListCtrlXP::GetColumnCount() const
 {
-    //Get the header control
-	FUNCTION_STACK_TRACE("FFFFE086");
-    CHeaderCtrl* pHeader = (CHeaderCtrl*)GetDlgItem(0);
-    //Return the number of items in it (i.e. the number of columns)
-    return pHeader->GetItemCount();
+    return m_wndHeader.GetItemCount();
 }
 
 void CListCtrlXP::SetOrdenable( bool ordenable) {
 	
-	FUNCTION_STACK_TRACE("FFFFE087");
 	m_bOrdenable= ordenable;
-	if( m_header)
-		m_header->m_bShowOver= m_bOrdenable;
-	else if( m_bOrdenable) {
-		m_header= new CSortHeaderCtrl();
-		HWND header= GetHeaderCtrl()->GetSafeHwnd();
-		if( header) {
-			VERIFY(m_header->SubclassWindow(header));
-			m_header->m_bShowOver= m_bOrdenable;
-		} else {
-			delete m_header;
-			m_header= NULL;
-		}
-	}
 }
 
 bool CListCtrlXP::GetSelItem(int &x, int &y) {
@@ -631,7 +622,7 @@ bool CListCtrlXP::GetSelItem(int &x, int &y) {
 void CListCtrlXP::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	FUNCTION_STACK_TRACE("FFFFE088");
-	CListCtrl::OnLButtonDblClk(nFlags, point);
+	CMFCListCtrl::OnLButtonDblClk(nFlags, point);
 
 	if( !m_bEditable)
 		return;
@@ -645,17 +636,70 @@ void CListCtrlXP::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 int	CListCtrlXP::AddColumn(CString texto, int tipo/*=0*/) {
 
-	ASSERT(m_header);
-	int numero= InsertColumn(m_header->GetItemCount(), texto, tipo ? LVCFMT_RIGHT : LVCFMT_LEFT, 100);
+	int numero= InsertColumn(m_wndHeader.GetItemCount(), texto, (tipo && tipo!=tipocol_textomultiline) ? LVCFMT_RIGHT : LVCFMT_LEFT, 100);
 	SetType(numero, tipo);
+	if(numero==0 && tipo && tipo!=tipocol_textomultiline) { // bug en la primera columna agregada
+
+		LVCOLUMN col;
+		col.mask=LVCF_FMT;
+		GetColumn(0, &col);
+		col.fmt|=LVCFMT_RIGHT;
+		SetColumn(0, &col);
+	}
 	return numero;
+}
+
+int CListCtrlXP::GetSortedColumn() {
+
+	return GetHeaderCtrl().GetColumnState(m_iSortedColumn)==0 ? -1 : m_iSortedColumn;
+}
+
+bool CListCtrlXP::GetSortedColumnOrder() {
+
+	BOOL bAscending = true;
+	int nColumnState = GetHeaderCtrl().GetColumnState(m_iSortedColumn);
+	if (nColumnState != 0)
+		bAscending = nColumnState <= 0;
+	return bAscending;
+}
+
+void CListCtrlXP::SortList(const int nColumn, const bool bAscending) {
+
+	NMLISTVIEW pNMLV;
+	LRESULT resultado;
+	
+	GetHeaderCtrl().SetSortColumn(nColumn, !bAscending, false);
+	pNMLV.iSubItem= nColumn;
+
+	OnLvnColumnclick((NMHDR *)&pNMLV, &resultado);
 }
 
 void CListCtrlXP::OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	FUNCTION_STACK_TRACE("FFFFE089");
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-	OnHeaderClicked( pNMHDR, pResult);
+	// aqui es donde toca llamar al padre
+	if( !m_bOrdenable)
+		return;
+	CWaitCursor wait;
+
+	m_iSortedColumn=pNMLV->iSubItem;
+	CSortClass ordenar(this, m_iSortedColumn);
+	BOOL bAscending = true;
+	int nColumnState = GetHeaderCtrl().GetColumnState(m_iSortedColumn);
+	if (nColumnState != 0)
+		bAscending = nColumnState <= 0;
+	GetHeaderCtrl().SetSortColumn(m_iSortedColumn, bAscending, false);
+	ordenar.Sort(bAscending,GetColumnType(m_iSortedColumn)+1);
+
+	int index= GetNextItem(-1, LVIS_SELECTED);
+	if( index!=-1)
+		EnsureVisible(index, true);
+
+	// obsoleto no usar
+	GetParent()->SendMessage(WM_LISTANOTIFICACION, -1, m_iSortedColumn);
+	GetParent()->SendMessage(WM_LISTANOTIFICACIONEX, MAKELONG(m_iSortedColumn, -1), GetDlgCtrlID());
+
 	*pResult = 0;
 }
 
@@ -663,11 +707,8 @@ void CListCtrlXP::OnLvnDeleteallitems(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	FUNCTION_STACK_TRACE("FFFFE08A");
 	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-	m_nSortedColumn= -1;
 	m_nNoSort= -1;
-	if( m_header) {
-		m_header->SetSortArrow(-1, false);
-	}
+	RemoveSortColumn(m_iSortedColumn);
 	*pResult = 0;
 }
 
@@ -690,24 +731,17 @@ void CListCtrlXP::OnPaint()
         ScreenToClient(&rc);
 		pDC->FillRect(rc, &CBrush(clrTextBk));
 
-        CHeaderCtrl* pHC;
-        pHC = GetHeaderCtrl();
-        if (pHC != NULL)
-        {
-            CRect rcH;
-			pHC->GetClientRect(rcH);
-            rc.top += rcH.bottom+5;
-			// rc.left+=10;
-        }
-
+        CRect rcH;
+		m_wndHeader.GetClientRect(rcH);
+        rc.top += rcH.bottom+5;
+			
         pDC->SetTextColor(clrText);
         pDC->SetBkColor(clrTextBk);
         pDC->SelectStockObject(ANSI_VAR_FONT);
 		pDC->DrawText(m_szVacia, rc, DT_CENTER| DT_WORDBREAK | DT_NOPREFIX | DT_NOCLIP);
         pDC->RestoreDC(nSavedDC);
         ReleaseDC(pDC);
-		if(m_header) 
-			m_header->Invalidate();
+		m_wndHeader.Invalidate();
     } else if ((GetStyle() & LVS_TYPEMASK) == LVS_REPORT ) {
 		CRect rcBounds;
 		GetItemRect(0, rcBounds, LVIR_BOUNDS);
@@ -745,7 +779,7 @@ LRESULT CListCtrlXP::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 		if(HIWORD(wParam)==CBN_KILLFOCUS || HIWORD(wParam)==EN_KILLFOCUS) {
 			if( !m_bScrolling) {
 				if( (::GetWindowLong((HWND)lParam,GWL_STYLE) &WS_VISIBLE)) {
-					OnSetText(false);
+					OnSetText();
 				}
 				HideAll();
 			}
@@ -769,7 +803,7 @@ LRESULT CListCtrlXP::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 		}
 	}
-	return CListCtrl::WindowProc(message, wParam, lParam);
+	return CMFCListCtrl::WindowProc(message, wParam, lParam);
 }
 
 void CListCtrlXP::StoreState(CString nombre) {
@@ -778,11 +812,6 @@ void CListCtrlXP::StoreState(CString nombre) {
 	CWinApp* pApp = AfxGetApp();
 	CString profile;
 	profile.Format("%s-Lista%d", nombre, GetDlgCtrlID());
-	if( m_header) {
-		BOOL ascendente;
-		pApp->WriteProfileInt(profile, "column", m_header->GetSortColumn(&ascendente));
-		pApp->WriteProfileInt(profile, "ascendente", ascendente);
-	}
 	CString ancho;
 	for( int i=0; i<GetColumnCount(); i++) {
 		ancho.Format("columw%d", i);
@@ -798,17 +827,6 @@ void CListCtrlXP::RestoreState(CString nombre) {
 	profile.Format("%s-Lista%d", nombre, GetDlgCtrlID());
 	int valor;
 
-	if( m_header) {
-		
-		m_bSortAscending= pApp->GetProfileInt(profile, "ascendente", true);
-		m_nSortedColumn= pApp->GetProfileInt(profile, "column", -1);
-		if( m_nSortedColumn>-1 && m_nSortedColumn<GetColumnCount()) {
-			m_bSortAscending= !m_bSortAscending;
-			HD_NOTIFY phdNotify;
-			phdNotify.iButton= m_nSortedColumn;
-			OnHeaderClicked((NMHDR*) &phdNotify, NULL);
-		}
-	}
 	CString ancho;
 	for( int i=0; i<GetColumnCount(); i++) {
 		ancho.Format("columw%d", i);
@@ -816,34 +834,14 @@ void CListCtrlXP::RestoreState(CString nombre) {
 			SetColumnWidth(i, valor);
 	}
 }
-void CListCtrlXP::PreSubclassWindow()
-{
-	FUNCTION_STACK_TRACE("FFFFE08D");
-	if( !m_header) {
-		m_header= new CSortHeaderCtrl();
-		HWND header= GetHeaderCtrl()->GetSafeHwnd();
-		if( header)
-			VERIFY(m_header->SubclassWindow(header));
-		else {
-			delete m_header;
-			m_header= NULL;
-		}
-	}
-	CListCtrl::PreSubclassWindow();
-}
 
 void CListCtrlXP::OnSetFocus(CWnd* pOldWnd)
 {
-	CListCtrl::OnSetFocus(pOldWnd);
-# ifdef _DEBUG
-	CWnd *temp= GetParent()->GetNextDlgTabItem(this, true);
-# endif
+	CMFCListCtrl::OnSetFocus(pOldWnd);
 	if(GetParent()->GetNextDlgTabItem(this, true)==pOldWnd) {
 		m_nRow = -1;
 		m_nCol = -1;
 	}
-	/*if( !m_bEditable)
-		ValidateScroll(this);*/
 	if(pOldWnd!=NULL && pOldWnd->GetParent()==this)
 		return;
 	if((GetStyle() & LVS_TYPEMASK)==LVS_REPORT)
@@ -853,13 +851,24 @@ void CListCtrlXP::OnSetFocus(CWnd* pOldWnd)
 void CListCtrlXP::AutoSizeColumns(int delta)
 {
 	CWaitCursor wait;
-	if( m_header) {
-		for (int i=0; i < m_header->GetItemCount(); i++) 
-			SetColumnWidth(i, delta==1 ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
-	}
+	for (int i=0; i < m_wndHeader.GetItemCount(); i++) 
+		SetColumnWidth(i, delta==1 ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
 }
 
-CNewMenu *CListCtrlXP::GetMenuContextual(CNewMenu *menu) {
+inline CString GetShortMenu1(UINT id)
+{
+	FUNCTION_STACK_TRACE("FFFFE043");
+	CString str;
+	str.LoadString(id);
+	int nIndex = str.ReverseFind(_T('\n'));
+	if(nIndex!=-1)
+	{
+		str=str.Mid(nIndex+1);
+	}
+	return str;
+}
+
+CMenu *CListCtrlXP::GetMenuContextual(CMenu *menu) {
 
 	ASSERT(menu);
 	if( GetSelectedCount()) {
@@ -869,21 +878,21 @@ CNewMenu *CListCtrlXP::GetMenuContextual(CNewMenu *menu) {
 		menu->AppendMenu(MF_STRING, ID_EDIT_CUT, "Copiar Columna");
 	}
 	if( m_bCanClean)
-		menu->AppendMenu(MF_STRING, ID_EDIT_CLEAR, GetShortMenu(ID_EDIT_CLEAR));
+		menu->AppendMenu(MF_STRING, ID_EDIT_CLEAR, GetShortMenu1(ID_EDIT_CLEAR));
 	if( !(GetStyle()& LVS_SINGLESEL)) {
 		if( GetSelectedCount()) 
 			menu->AppendMenu(MF_SEPARATOR);
-		menu->AppendMenu(MF_STRING, ID_EDIT_SELECT_ALL,GetShortMenu(ID_EDIT_SELECT_ALL));
+		menu->AppendMenu(MF_STRING, ID_EDIT_SELECT_ALL,GetShortMenu1(ID_EDIT_SELECT_ALL));
 	}
 	return menu;
 }
 
-CNewMenu *CListCtrlXP::GetMenuContextual() {
+CMenu *CListCtrlXP::GetMenuContextual() {
 
 	if(m_hMenuContextual)
 		delete m_hMenuContextual;
 
-	m_hMenuContextual= new CNewMenu();
+	m_hMenuContextual= new CMenu();
 	m_hMenuContextual->CreatePopupMenu();
 
 	return GetMenuContextual(m_hMenuContextual);
@@ -904,7 +913,7 @@ void CListCtrlXP::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 	ScreenToClient(&m_pPoint);
 	SetFocus();
 	
-	CNewMenu *menu= GetMenuContextual();
+	CMenu *menu= GetMenuContextual();
 	menu->TrackPopupMenu( TPM_RIGHTBUTTON, point.x, point.y, AfxGetMainWnd());
 }
 
@@ -990,7 +999,7 @@ bool CListCtrlXP::SetCanShowMenu(bool can) {
 void CListCtrlXP::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	m_pPoint= point;
-	CListCtrl::OnRButtonDown(nFlags, point);
+	CMFCListCtrl::OnRButtonDown(nFlags, point);
 }
 
 int	CListCtrlXP::GetNoSort() {
@@ -1000,7 +1009,7 @@ int	CListCtrlXP::GetNoSort() {
 
 void CListCtrlXP::OnKillFocus(CWnd* pNewWnd)
 {
-	CListCtrl::OnKillFocus(pNewWnd);
+	CMFCListCtrl::OnKillFocus(pNewWnd);
 	if(pNewWnd != NULL && pNewWnd->GetParent() == this)
 		return;
 
@@ -1131,19 +1140,37 @@ void CListCtrlXP::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 	rcLabel.left += offset/2;
 	rcLabel.right -= offset;
 
-	pDC->DrawText(sLabel,-1,rcLabel,DT_LEFT | DT_SINGLELINE | DT_NOPREFIX | DT_NOCLIP 
-				| DT_VCENTER /*| DT_END_ELLIPSIS*/);
+	LV_COLUMN lvc;
+	lvc.mask = LVCF_FMT | LVCF_WIDTH;
+	GetColumn(0, &lvc);
+
+	UINT nJustify = DT_LEFT;
+	switch(lvc.fmt & LVCFMT_JUSTIFYMASK)
+	{
+		case LVCFMT_RIGHT:
+			nJustify = DT_RIGHT;
+			break;
+		case LVCFMT_CENTER:
+			nJustify = DT_CENTER;
+			break;
+		default:
+			break;
+	}
+	if(rcLabel.Height()>25) // es una linea multiple
+		nJustify|=DT_WORDBREAK | DT_END_ELLIPSIS;
+	else nJustify|=DT_SINGLELINE;
+
+	pDC->DrawText(sLabel,-1,rcLabel,nJustify | DT_NOPREFIX | DT_NOCLIP | DT_VCENTER);
 
 
 	// Draw labels for remaining columns
-	LV_COLUMN lvc;
-	lvc.mask = LVCF_FMT | LVCF_WIDTH;
+	
 
 	rcBounds.right = rcHighlight.right > rcBounds.right ? rcHighlight.right :
 							rcBounds.right;
 	rgn.CreateRectRgnIndirect(&rcBounds);
 	pDC->SelectClipRgn(&rgn);
-				   
+	
 	for(int nColumn = 1; GetColumn(nColumn, &lvc); nColumn++)
 	{
 		rcCol.left = rcCol.right;
@@ -1157,22 +1184,24 @@ void CListCtrlXP::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 		UINT nJustify = DT_LEFT;
 		switch(lvc.fmt & LVCFMT_JUSTIFYMASK)
 		{
-		case LVCFMT_RIGHT:
-			nJustify = DT_RIGHT;
-			break;
-		case LVCFMT_CENTER:
-			nJustify = DT_CENTER;
-			break;
-		default:
-			break;
+			case LVCFMT_RIGHT:
+				nJustify = DT_RIGHT;
+				break;
+			case LVCFMT_CENTER:
+				nJustify = DT_CENTER;
+				break;
+			default:
+				break;
 		}
+		if(rcLabel.Height()>25) // es una linea multiple
+			nJustify|=DT_WORDBREAK;
+		else nJustify|=DT_SINGLELINE;
 
 		rcLabel = rcCol;
 		rcLabel.left += offset;
 		rcLabel.right -= offset;
 
-		pDC->DrawText(sLabel, -1, rcLabel, nJustify | DT_SINGLELINE | 
-					DT_NOPREFIX | DT_VCENTER | DT_END_ELLIPSIS);
+		pDC->DrawText(sLabel, -1, rcLabel, nJustify | DT_NOPREFIX | DT_VCENTER | DT_END_ELLIPSIS);
 	}
 
 	if (lvi.state & LVIS_FOCUSED && (GetFocus() == this)) {
@@ -1191,7 +1220,12 @@ void CListCtrlXP::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 void CListCtrlXP::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
-	CListCtrl::OnDrawItem(nIDCtl, lpDrawItemStruct);
+	CMFCListCtrl::OnDrawItem(nIDCtl, lpDrawItemStruct);
+}
+
+int CListCtrlXP::HitTest(_In_ CPoint pt, _In_opt_ UINT* pFlags /*= NULL*/) const {
+
+	return CMFCListCtrl::HitTest(pt, pFlags);
 }
 
 void CListCtrlXP::OnLButtonDown(UINT nFlags, CPoint point)
@@ -1209,7 +1243,7 @@ void CListCtrlXP::OnLButtonDown(UINT nFlags, CPoint point)
 			}
 		}
 	}
-	CListCtrl::OnLButtonDown(nFlags, point);
+	CMFCListCtrl::OnLButtonDown(nFlags, point);
 }
 
 void CListCtrlXP::SetText(int row, int col,const CString &mensaje) {
@@ -1233,17 +1267,17 @@ CString CListCtrlXP::GetMensaje() {
 
 void CListCtrlXP::SetSelectedIndex(int index) {
 
-	SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
+	SetItemState(index, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED |LVIS_FOCUSED );
 }
 
 int CListCtrlXP::GetSelectedIndex() {
 
-	return GetNextItem(-1, LVIS_SELECTED);
+	return GetNextItem( -1, LVNI_ALL | LVNI_SELECTED);
 }
 
 BOOL CListCtrlXP::SetItemText(int nItem,int nSubItem,LPCTSTR lpszText) {
 
-	return CListCtrl::SetItemText(nItem, nSubItem, lpszText);
+	return CMFCListCtrl::SetItemText(nItem, nSubItem, lpszText);
 }
 
 LRESULT	CListCtrlXP::Notify( DWORD dwMessage, int nItem, int nCol ) {

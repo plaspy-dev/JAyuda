@@ -299,6 +299,12 @@ void CEditTiempo::ValidateFecha() {
 	if( ano<1) ano= m_DTMaximo ? m_DTMaximo->GetYear() : 06;
 
 	COleDateTime final(ano+2000, mes, dia, hora, minutos, 0);
+	/*temp= CMyTime(final).GetFechaHora();
+	if(m_DTMaximo)
+		temp= CMyTime(*m_DTMaximo).GetFechaHora();
+	if(m_DTMinimo)
+		temp= CMyTime(*m_DTMinimo).GetFechaHora();*/
+
 	if(m_DTMaximo && final>(*m_DTMaximo))
 		final= *m_DTMaximo;
 	if(m_DTMinimo && final<(*m_DTMinimo))

@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 #include "editfloat.h"
 
+IMPLEMENT_DYNAMIC(CEditFloat, CEditXP)
+
 CEditFloat::CEditFloat(void)
 {
 	m_dNumero=0;
@@ -40,14 +42,11 @@ CString CEditFloat::CleanZero(const CString &cadena, bool force) {
 
 CString CEditFloat::TrimDecimales(double numero) {
 	
-	int decimales=AfxGetApp()->GetProfileInt(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "precision", 2);
-	
-	if( AfxGetApp()->GetProfileInt(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "windows", 1)) {
-		char signod[4];
-		signod[0]=0;
-		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IDIGITS, signod, 4);
-		decimales= atoi(signod);
-	}
+	char signod[4];
+	signod[0]=0;
+	GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IDIGITS, signod, 4);
+	int decimales= atoi(signod);
+
 	CString formato,resultado;
 	formato.Format("%%.%dlf", decimales);
 	resultado.Format(formato, numero);
@@ -56,15 +55,15 @@ CString CEditFloat::TrimDecimales(double numero) {
 
 void CEditFloat::GetLocale(char *decimal, char *miles) {
 
-	char signod[4];
-	strcpy(signod, AfxGetApp()->GetProfileString(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "sepdec", ","));
-	if( AfxGetApp()->GetProfileInt(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "windows", 1)) 
-		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SDECIMAL, signod, 4);
-	strcpy(decimal,signod);
-    strcpy(signod,AfxGetApp()->GetProfileString(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "sepmil", ","));
-	if( AfxGetApp()->GetProfileInt(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "windows", 1))
-		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, signod, 4);
-	strcpy(miles, signod);
+	static char stdecimal[4]= {0};
+	static char stmiles[4]= {0};
+
+	if(!stdecimal[0])
+		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SDECIMAL, stdecimal, 4);
+	strcpy(decimal,stdecimal);
+	if(!stmiles[0])
+		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, stmiles, 4);
+	strcpy(miles, stmiles);
 }
 
 void CEditFloat::SetNumeroEx() {
@@ -86,8 +85,7 @@ CString	CEditFloat::GetNormal(const CString &numero) {
 
 	char dec[4], mil[4];
 	GetLocale(dec, mil);
-	CString temp= AfxGetApp()->GetProfileString(AfxGetApp()->GetProfileString("almaceno", "clave", "almaceno"), "sepmill", "'");
-	szCadena.Remove(temp[0]);
+	szCadena.Remove('\'');
 	szCadena.Remove(mil[0]);
 	szCadena.Replace(dec, ".");
 	return szCadena;
@@ -241,6 +239,6 @@ void CEditFloat::SetWindowText(LPCTSTR lpszString) {
 void CEditFloat::SetText(const CString &texto) {
 	
 	SetNumeroEx(texto);
-	CEditXP::SetText(texto);
+	CEditXP::SetWindowText(texto);
 }
 

@@ -13,7 +13,7 @@
 # define GRUPO_ADMINISTRADOR	1
 
 
-class CTemplateApp : public CWinAppEx
+class CTemplateApp : public CWinAppXP
 {
 public:
 	CTemplateApp();

@@ -6,7 +6,6 @@
 # include "MasEdit.h"
 # include <resource.h>
 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -43,8 +42,7 @@ CmEdit::CmEdit()
     for (int i = 0; i < MAX_CHARS; i++)
         m_Char[i] = NULL;
 	m_bRangos= false;
-    //SubclassWindow(pParent->m_hWnd);
-    //pParent->SubclassWindow(this->m_hWnd);
+	m_bOcultar=false;
 }
 
 CmEdit::~CmEdit()
@@ -71,6 +69,8 @@ BEGIN_MESSAGE_MAP(CmEdit, CEditXP)
 	ON_MESSAGE(WM_PASTE, OnPaste)
 	ON_MESSAGE(WM_CUT, OnCut)
 	ON_MESSAGE(WM_CLEAR, OnCut)
+	ON_WM_TIMER()
+	ON_WM_KILLFOCUS()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,6 +86,7 @@ int CmEdit::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CmEdit::OnDestroy() 
 {
+	m_bOcultar=false;
 	FUNCTION_STACK_TRACE("FFFFE067");
 	CEditXP::OnDestroy();
 }
@@ -128,7 +129,9 @@ void CmEdit::SetData(const CString& data)
         }
     }
 	
+	m_szTextoOculto= strWindowText;
     SetWindowText(strWindowText);
+	Ocultar();
 }
 
 CString CmEdit::GetData()
@@ -139,6 +142,7 @@ CString CmEdit::GetData()
     CString strData;
     if(!m_bUseMask) 
 		return NULL;
+	
     for (int i = 1; i <= m_iNumChars; i++)
     {
         if (!m_Char[i - 1]->m_bStaticChar)
@@ -177,6 +181,7 @@ void CmEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
                     int iNewNext = FindNextChar(m_iCurrentChar - 1, false, false);
                     if (iNewNext >= 0)
                     {
+						Ocultar();
                         SetSel(iNewNext, iNewNext + 1);
                         ReplaceSel(m_strPrompt);
                         m_iCurrentChar = iNewNext;
@@ -184,8 +189,7 @@ void CmEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
                     }
                 }
                 break;
-
-    default:    
+    default:
                 int x, y, z;
                 GetSel(x,y);
                 if (x != y)
@@ -202,6 +206,7 @@ void CmEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
                             szReplaceText += m_strPrompt;
                         }
                     }
+					Ocultar();
                     ReplaceSel(szReplaceText);
                     m_iCurrentChar = FindNextChar(x, false, true);
                     SetSel(m_iCurrentChar, m_iCurrentChar);
@@ -212,7 +217,6 @@ void CmEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 						bool valido= (m_Char[m_iCurrentChar]->m_strValids.Find((TCHAR)nChar) >= 0);
 						if( !valido) {
-
 							if( isupper(nChar)) 
 								nChar= tolower(nChar);
 							else if( islower(nChar)) 
@@ -222,6 +226,7 @@ void CmEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 						if( valido) {
 							int iNewNext = FindNextChar(m_iCurrentChar + 1, false, true);
 							SetSel(m_iCurrentChar, m_iCurrentChar + 1);
+							Ocultar();
 							ReplaceSel((CString)(char)nChar);
 							if (iNewNext >= 0)
 					            m_iCurrentChar = iNewNext;
@@ -381,6 +386,7 @@ void CmEdit::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
                             szReplaceText += m_strPrompt;
                         }
                     }
+					Ocultar();
                     ReplaceSel(szReplaceText);
                     m_iCurrentChar = FindNextChar(x, false, true);
                     SetSel(m_iCurrentChar, m_iCurrentChar);
@@ -388,6 +394,7 @@ void CmEdit::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
                 else if (m_iCurrentChar <= FindNextChar(m_iNumChars - 1, false, false))
                 {
                     SetSel(m_iCurrentChar, m_iCurrentChar + 1);
+					Ocultar();
                     ReplaceSel(m_strPrompt);
                     iNext = FindNextChar(m_iCurrentChar + 1, false, true);
                     if (iNext >= 0)
@@ -429,11 +436,9 @@ bool CmEdit::IsValidData() {
 	FUNCTION_STACK_TRACE("FFFFE06F");
 	CString temp;
 	GetWindowText(temp);
-	if( m_bUseMask) 
-
+	if( m_bUseMask)
 		return temp.Find( m_strPrompt)==-1;
 	else if( m_bRangos) 
-
 		return IsValid( m_strMask, temp);
 	return true;
 }
@@ -463,7 +468,9 @@ void CmEdit::SetDataEx(CString data) {
 			m_bUseMask=false;
 		}
 	}
+	m_szTextoOculto= data;
     SetWindowText(data);
+	Ocultar();
 }
 
 bool CmEdit::Init(CString strMask, CString strInitialData)
@@ -638,7 +645,15 @@ bool CmEdit::SetValidChars(const CString& strMask)
 
     m_iNumChars = iNextChar;
     SetLimitText(m_iNumChars);
-    
+	
+	m_szTextoOculto.Empty();
+	for (int i = 1; i <= m_iNumChars; i++)
+	{
+		if (m_Char[i - 1]->m_bStaticChar)
+			m_szTextoOculto+= m_Char[i - 1]->m_strValids;
+		else m_szTextoOculto+=m_strPrompt;
+	}
+
     return true;
 }
 
@@ -778,8 +793,10 @@ LRESULT CmEdit::OnPaste(WPARAM Wparam, LPARAM LParam)
 						if( buffer[i]>='0' && buffer[i]<='9')
 							out+=buffer[i];
 						else break;
-						if(!out.IsEmpty())
+						if(!out.IsEmpty()) {
+							Ocultar();
 							ReplaceSel(out, true);
+						}
 				} else {
 					Text= buffer;
 					SetSel(buffer.GetLength(), buffer.GetLength(), false);
@@ -793,4 +810,67 @@ LRESULT CmEdit::OnPaste(WPARAM Wparam, LPARAM LParam)
          }
       }
    return 0;
+}
+
+void CmEdit::OcultarContenido(bool ocutar/*=true*/) {
+
+	m_bOcultar=ocutar;
+}
+
+void CmEdit::Ocultar() {
+
+	if(!m_bOcultar)
+		return;
+
+	int x, y;
+	GetSel(x,y);
+
+	CString strWindowText;
+	CEditXP::GetWindowText(strWindowText);
+	if(strWindowText==m_szTextoOculto)
+		return;
+
+	for (int i = 1; i <= m_iNumChars; i++)
+	{
+		if (!m_Char[i - 1]->m_bStaticChar)
+		{
+			if (strWindowText.GetLength() >= i)
+			{
+				if (strWindowText[i - 1] != m_strPrompt && strWindowText[i-1]!='*') {
+					m_szTextoOculto.SetAt(i-1, strWindowText[i-1]);
+					strWindowText.SetAt(i-1, '*');
+				} else if(strWindowText[i - 1] == m_strPrompt) {
+					m_szTextoOculto.SetAt(i-1, strWindowText[i-1]);
+				}
+			}
+		}
+	}
+	SetWindowText(strWindowText);
+	SetSel(x, y);
+}
+
+void CmEdit::OnKillFocus( CWnd* pNewWnd ) 
+{
+	Ocultar();
+	CEditXP::OnKillFocus( pNewWnd );	
+}
+
+void CmEdit::GetWindowText(CString &rString) {
+
+	if(m_bOcultar) {
+		Ocultar();
+		rString= m_szTextoOculto;
+	} else CEditXP::GetWindowText(rString);
+}
+
+void CmEdit::SetWindowText(LPCTSTR lpszString) {
+
+	CEditXP::SetWindowText(lpszString);
+}
+
+CString	CmEdit::GetText() {
+
+	CString resultado;
+	GetWindowText(resultado);
+	return resultado;
 }

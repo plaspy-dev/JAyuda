@@ -95,9 +95,11 @@ public:
 public:
     bool    Init(CString strMask, CString strInitialData = "");
     bool    SetPromptChar(CString strPromptChar);
+	void	Ocultar();
 	bool	m_bRangos;
 	
 protected:
+	bool			m_bOcultar;
 	bool            m_bInit;
     CString         m_strPrompt;
 	CString			m_strMask;
@@ -106,10 +108,12 @@ protected:
     int             m_iCurrentChar;
     bool            m_bShiftDown;
 	bool			m_bUseMask;
+	CString			m_szTextoOculto;
 
 
 // Operaciones
 public:
+	void	OcultarContenido(bool ocutar=true);
 	//***********************************************************************
 	// Name:		GetPromptChar
 	// Description:	Devuelve el signo con el cual se marca los campos especiales.
@@ -159,6 +163,8 @@ public:
 	// Notes:		None.
 	//***********************************************************************
 	void	SetDataEx(CString data);
+	void GetWindowText(CString &rString);
+	void SetWindowText(LPCTSTR lpszString);
 
 protected:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
@@ -180,8 +186,13 @@ protected:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg LRESULT OnPaste(WPARAM Wparam, LPARAM LParam);
 	afx_msg LRESULT OnCut(WPARAM Wparam, LPARAM LParam);
+	afx_msg void OnKillFocus(CWnd* pNewWnd);
+	DECLARE_MESSAGE_MAP()
 
-DECLARE_MESSAGE_MAP()
+public:
+	// Text
+	__declspec(property(get=GetText,put=SetWindowText))		CString	Text;
+	CString	GetText();
 };
 
 void AFXAPI DDX_CmEdit(CDataExchange* pDX, int nIDC, CmEdit& rControl, CString& data);

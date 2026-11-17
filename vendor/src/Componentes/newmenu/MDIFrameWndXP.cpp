@@ -1,42 +1,73 @@
 #include "StdAfx.h"
+# include "resource.h"
 # include "Componentes.h"
+# include <ResourceDLL.h>
 #include "newmenu/mdiframewndxp.h"
 # include "newmenu/MultiDocTemplateXP.h"
 # include "atlbase.h"
-
 # include "ComponentesDoc.h"
+
+# define	TIMER_RESTORE_STATUS_BAR	123
+# define	MESSAGE_DELAY				3000
+# define	TIMER_UPDATE_TREE			3001
+# define	TIMER_UPDATE_TOOLBAR		3002
+
+class CMFCRibbonStatusBarPaneEx : public CMFCRibbonStatusBarPane {
+
+	CMFCRibbonStatusBar *m_pParent;
+	COLORREF  m_clrBackground;
+	COLORREF  m_clrForeground;
+public:
+	CMFCRibbonStatusBarPaneEx(
+		UINT     nCmdID,                     // Pane command id
+		LPCTSTR  lpszText,                   // Pane label
+		BOOL     bIsStatic = FALSE,
+		CMFCRibbonStatusBar *parent=NULL) 
+		: CMFCRibbonStatusBarPane(nCmdID, lpszText, bIsStatic, NULL, "") {// The almost large text in pane
+
+			m_pParent= parent;
+			m_clrBackground=-1;
+			m_clrForeground=-1;
+	}
+
+	void SetFgColor(COLORREF foreground=-1) {
+
+		m_clrForeground= foreground;
+	}
+	void SetBackground(COLORREF background=-1) {
+		m_clrBackground= background;
+	}
+	virtual void OnCalcTextSize(CDC* pDC) {
+
+		CMFCRibbonStatusBarPane::OnCalcTextSize(pDC);
+		if(m_pParent) {
+			m_sizeTextRight.cx = m_pParent->GetSpace() - 2*m_szMargin.cx;
+		}
+	}
+
+	virtual COLORREF OnFillBackground(CDC* pDC) {
+
+		COLORREF temp= CMFCRibbonStatusBarPane::OnFillBackground(pDC);
+		if(m_clrBackground!=-1) {
+
+			CRect rect =GetRect();
+			pDC->FillSolidRect(rect, m_clrBackground);
+		}
+		if(m_clrForeground!=-1)
+			temp=m_clrForeground;
+		return temp;
+	}
+};
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-IMPLEMENT_DYNAMIC(CMDIFrameWndXP,CMDIFrameWnd)
-IMPLEMENT_JDOCK(CMDIFrameWndXP)
+IMPLEMENT_DYNAMIC(CMDIFrameWndXP,CMDIFrameWndEx)
 
-const DWORD CFrameWnd::dwDockBarMap[4][2] =
-{
-  { AFX_IDW_DOCKBAR_TOP,      CBRS_TOP    },
-  { AFX_IDW_DOCKBAR_BOTTOM,   CBRS_BOTTOM },
-  { AFX_IDW_DOCKBAR_LEFT,     CBRS_LEFT   },
-  { AFX_IDW_DOCKBAR_RIGHT,    CBRS_RIGHT  },
-};
-
-BEGIN_MESSAGE_MAP(CMDIFrameWndXP, CMDIFrameWnd)
-	  ON_WM_CREATE()
-	  ON_WM_MEASUREITEM()
-      ON_WM_MENUCHAR()
-      ON_WM_INITMENUPOPUP()
-      ON_WM_ENTERMENULOOP()
-      ON_WM_EXITMENULOOP() 
+BEGIN_MESSAGE_MAP(CMDIFrameWndXP, CMDIFrameWndEx)
       ON_WM_TIMER()
-      ON_WM_NCHITTEST()
-      ON_WM_DESTROY()
-      ON_WM_SYSCOLORCHANGE()
-      ON_WM_NCPAINT()
-      ON_WM_PAINT()
-      ON_WM_ACTIVATEAPP()
-      ON_WM_ACTIVATE()
-	  ON_JDOCK_MESSAGES()
 	  ON_COMMAND(ID_EDIT_PASTE, OnEditPaste)
 	  ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
 	  ON_COMMAND(ID_EDIT_CUT, OnEditCut)
@@ -69,474 +100,89 @@ BEGIN_MESSAGE_MAP(CMDIFrameWndXP, CMDIFrameWnd)
 	  ON_COMMAND(ID_HELP, OnHelpIndex)
 	  ON_COMMAND(ID_HELP_INDEX, OnHelpIndex)
 	  ON_COMMAND(ID_HELP_FINDER, OnHelpIndex)
+	  ON_COMMAND(ID_WINDOW_MANAGER, &CMDIFrameWndXP::OnWindowManager)
+	  ON_COMMAND_RANGE(ID_VIEW_APPLOOK_WIN_2000, ID_VIEW_APPLOOK_OFF_2007_AQUA, &CMDIFrameWndXP::OnApplicationLook)
+	  ON_UPDATE_COMMAND_UI_RANGE(ID_VIEW_APPLOOK_WIN_2000, ID_VIEW_APPLOOK_OFF_2007_AQUA, &CMDIFrameWndXP::OnUpdateApplicationLook)
+	  ON_WM_CREATE()
 END_MESSAGE_MAP()
 
 CMDIFrameWndXP::CMDIFrameWndXP() {
 
-	m_bInMenuLoop = FALSE;
-	m_hShowMenu= NULL;
-    m_TimerID = NULL;
-    m_menubarItemIndex = UINT(-1);
+	m_nAncho=0;
+	m_nAlto=0;
+	m_dwBkColor=-1;
+	m_pFlash=NULL;
 	m_ulTotal=0;
 	m_ulRealizados=0;
 	m_nCurrentHilos=0;
-	m_nAnimation=0;
+	m_nAnimation=1;
 	m_pTLocal= m_pTServidor= CTime::GetCurrentTime();
 	m_nInactivo= 0;
 	m_bInactivo= false;
 	m_bFocus= true;
 	m_bConectando= false;
 	m_pFadeWnd= NULL;
+	((CWinAppXP *)AfxGetApp())->m_nAppLook = ((CWinAppXP *)AfxGetApp())->GetInt(_T("ApplicationLook"), ID_VIEW_APPLOOK_OFF_2007_BLUE);
+
+	m_LogoFont.CreateFont(36, 0, 0, 0, FW_BOLD, 1, FALSE, FALSE,
+		ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+		FIXED_PITCH | FF_ROMAN, "Times New Roman");
+
+	CResourceDLL dll;
+	m_hBitmap= CEnBitmap::LoadImageResource(IDR_FONDO, "foto",AfxGetResourceHandle());
+	ASSERT(m_hBitmap);
+	if(m_hBitmap)
+		::GetObject(m_hBitmap, sizeof(BITMAP), &m_bmInfo);
 }
 
 CMDIFrameWndXP::~CMDIFrameWndXP() {
+	
 	CMiscelaneosEx *info;
-	for( int i=0; i<m_pMenus.GetCount(); i++) {
-		if( info= m_pMenus.GetAt(i)) {
-			CNewMenu *menu = (CNewMenu *)info->GetData();
-			delete menu;
-		}
-	}
 	if(m_pFadeWnd) {
 		delete m_pFadeWnd;
 		m_pFadeWnd=NULL;
-	}	
+	}
+	if(m_hBitmap) 
+		::DeleteObject(m_hBitmap);
+	m_LogoFont.DeleteObject();
+	if(m_pFlash)
+		delete m_pFlash;
 }
-
-BOOL CMDIFrameWndXP::ShowMenu(BOOL bShow)
-{
-  // Gets the actual menu
-  HMENU hMenu = ::GetMenu(m_hWnd);   
-  if(bShow)
-  {
-    if(m_hShowMenu)
-    {
-      ::SetMenu(m_hWnd, m_hShowMenu); 
-      DrawMenuBar();
-      m_hShowMenu = NULL;
-      return FALSE;
-    }
-    return TRUE;
-  }
-  else
-  {
-    m_hShowMenu = hMenu;
-    if(m_hShowMenu)
-    {
-      ::SetMenu(m_hWnd, NULL); 
-      DrawMenuBar();
-      return TRUE;
-    }
-    return FALSE;
-  }
-}
-
-#if _MFC_VER < 0x0700 
-
-BOOL CMDIFrameWndXP::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle,
-                                CWnd* pParentWnd, CCreateContext* pContext)
-{
-  // only do this once
-  ASSERT_VALID_IDR(nIDResource);
-  ASSERT(m_nIDHelp == 0 || m_nIDHelp == nIDResource);
-
-  m_nIDHelp = nIDResource;    // ID for help context (+HID_BASE_RESOURCE)
-
-  CString strFullString;
-  if (strFullString.LoadString(nIDResource))
-    AfxExtractSubString(m_strTitle, strFullString, 0);    // first sub-string
-
-  VERIFY(AfxDeferRegisterClass(AFX_WNDFRAMEORVIEW_REG));
-
-  // attempt to create the window
-  LPCTSTR lpszClass = GetIconWndClass(dwDefaultStyle, nIDResource);
-  LPCTSTR lpszTitle = m_strTitle;
-  if (!Create(lpszClass, lpszTitle, dwDefaultStyle, rectDefault,
-              pParentWnd, MAKEINTRESOURCE(nIDResource), 0L, pContext))
-  {
-    return FALSE;   // will self destruct on failure normally
-  }
-
-  // save the default menu handle
-  ASSERT(m_hWnd != NULL);
-  m_hMenuDefault = ::GetMenu(m_hWnd);
-
-  // load accelerator resource
-  LoadAccelTable(MAKEINTRESOURCE(nIDResource));
-
-  if (pContext == NULL)   // send initial update
-    SendMessageToDescendants(WM_INITIALUPDATE, 0, 0, TRUE, TRUE);
-
-  // save menu to use when no active MDI child window is present
-  ASSERT(m_hWnd != NULL);
-  m_hMenuDefault = ::GetMenu(m_hWnd);
-  if (m_hMenuDefault == NULL)
-    TRACE0("Warning: CMDIFrameWnd without a default menu.\n");
-  return TRUE;
-}
-#endif
-
-BOOL CMDIFrameWndXP::Create( LPCTSTR lpszClassName,
-                              LPCTSTR lpszWindowName,
-                              DWORD dwStyle,
-                              const RECT& rect,
-                              CWnd* pParentWnd,
-                              LPCTSTR lpszMenuName,
-                              DWORD dwExStyle,
-                              CCreateContext* pContext)
-{
-  if (lpszMenuName != NULL)
-  {
-    m_DefaultNewMenu.LoadMenu(lpszMenuName);
-    // load in a menu that will get destroyed when window gets destroyed
-    if (m_DefaultNewMenu.m_hMenu == NULL)
-    {
-#if _MFC_VER < 0x0700 
-      TRACE0("Warning: failed to load menu for CMDIFrameWndXP.\n");
-#else
-      TRACE(traceAppMsg, 0, "Warning: failed to load menu for CMDIFrameWndXP.\n");
-#endif
-      PostNcDestroy();            // perhaps delete the C++ object
-      return FALSE;
-    }
-  }
-
-  m_strTitle = lpszWindowName;    // save title for later
-
-  if (!CreateEx(dwExStyle, lpszClassName, lpszWindowName, dwStyle,
-    rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-    pParentWnd->GetSafeHwnd(), m_DefaultNewMenu.m_hMenu, (LPVOID)pContext))
-  {
-#if _MFC_VER < 0x0700 
-    TRACE0("Warning: failed to create CMDIFrameWndXP.\n");
-#else
-    TRACE(traceAppMsg, 0, "Warning: failed to create CMDIFrameWndXP.\n");
-#endif
-
-    return FALSE;
-  } 
-
-  UpdateMenuBarColor(m_DefaultNewMenu);
-
-  return TRUE;
-}
-// dock bars will be created in the order specified by dwDockBarMap
-// this also controls which gets priority during layout
-// this order can be changed by calling EnableDocking repetitively
-// with the exact order of priority
-void CMDIFrameWndXP::EnableDocking(DWORD dwDockStyle)
-{
- ASSERT((dwDockStyle & ~(CBRS_ALIGN_ANY|CBRS_FLOAT_MULTI)) == 0);
-  for (int i = 0; i < 4; i++)
-  {
-    if (dwDockBarMap[i][1] & dwDockStyle & CBRS_ALIGN_ANY)
-    {
-      CDockBar* pDock = (CDockBar*)GetControlBar(dwDockBarMap[i][0]);
-      if (pDock == NULL)
-      {
-        pDock = new CNewDockBar;
-        if (!pDock->Create(this,
-          WS_CLIPSIBLINGS|WS_CLIPCHILDREN|WS_CHILD|WS_VISIBLE |
-            dwDockBarMap[i][1], dwDockBarMap[i][0]))
-        {
-          AfxThrowResourceException();
-        }
-      }
-    }
-  }
-  CMDIFrameWnd::EnableDocking(dwDockStyle);
-}
-
-int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
-  {
-    if (CMDIFrameWnd::OnCreate(lpCreateStruct) == -1)
-      return -1;
-
-    if(m_SystemNewMenu.m_hMenu)
-    {
-      ::DestroyMenu(m_SystemNewMenu.Detach());
-    }
-    m_SystemNewMenu.Attach(::GetSystemMenu(m_hWnd,FALSE));
-
-    return 0;
-  }
-
-  void CMDIFrameWndXP::OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu) 
-  {
-    CMDIFrameWnd::OnInitMenuPopup(pPopupMenu, nIndex, bSysMenu);
-    CNewMenu::OnInitMenuPopup(m_hWnd,pPopupMenu, nIndex, bSysMenu);
-  }
-
-  void CMDIFrameWndXP::OnSysColorChange() 
-  {
-    CMDIFrameWnd::OnSysColorChange();
-    CNewMenu::OnSysColorChange();
-    UpdateMenuBarColor(m_DefaultNewMenu);
-  }
-
-  void CMDIFrameWndXP::OnEnterMenuLoop(BOOL bIsTrackPopupMenu)
-  {
-    m_bInMenuLoop = TRUE;
-    if(m_TimerID!=NULL)
-    {
-      KillTimer(m_TimerID);
-      m_TimerID = NULL;
-    }
-    if (m_menubarItemIndex!=UINT(-1))
-    {
-      DrawMenubarItem(this,GetMenu(),m_menubarItemIndex,NULL);
-      m_menubarItemIndex=UINT(-1);
-    }
-    CMDIFrameWnd::OnEnterMenuLoop(bIsTrackPopupMenu);
-  }
-
-  void CMDIFrameWndXP::OnExitMenuLoop(BOOL bIsTrackPopupMenu)
-  {
-    m_bInMenuLoop = FALSE;
-    CMDIFrameWnd::OnExitMenuLoop(bIsTrackPopupMenu);
-  }
 
   void CMDIFrameWndXP::OnTimer(UINT_PTR nIDEvent)
   {
-    if(m_TimerID==nIDEvent)
-    {
-      CPoint pt;
-      GetCursorPos(&pt);
-      SendMessage(WM_NCHITTEST, 0, MAKELONG(pt.x, pt.y));
-	} else if( nIDEvent==TIMER_RESTORE_STATUS_BAR) {
+    if( nIDEvent==TIMER_RESTORE_STATUS_BAR) {
 
 		KillTimer(TIMER_RESTORE_STATUS_BAR);
-		m_wndStatusBar.RestorePane(0);
-	} //funcion obsoleta con las nuevas definiciones
-	/*else if( nIDEvent==	JUPDATER_TIMER) {
-
-		KillTimer( JUPDATER_TIMER);
-		CString temp;
-		temp.Format( "\"%s\" %d %s",CApplicacion::GetAppPath("jupdater.exe"), AfxGetApp()->GetProfileInt("jupdater", "Actualizacion", 1), CApplicacion::GetAppName());
-		WinExec( temp, SW_MINIMIZE);
-	} */
-	CMDIFrameWnd::OnTimer(nIDEvent);
-  }
-
-  void CMDIFrameWndXP::OnDestroy()
-  {
-    if(m_TimerID!=NULL)
-    {
-      KillTimer(m_TimerID);
-      m_TimerID = NULL;
-    }
-    CMDIFrameWnd::OnDestroy();
-  }
-
-  LRESULT CMDIFrameWndXP::OnNcHitTest(CPoint point)
-  {
-    UINT nHitCode = CMDIFrameWnd::OnNcHitTest(point);
-    // Test Win95/98/me and Win NT 4.0
-    if(g_Shell<Win2000 || bRemoteSession)
-    {
-      UINT nStatus;
-      UINT nHotlightStatus;
-
-      if( IsChild(GetFocus()) )
-      { 
-        nStatus = 0; 
-        nHotlightStatus = ODS_HOTLIGHT;
-      }
-      else if(g_Shell==Win95 || g_Shell==WinNT4)
-      { // Win95 or winNt 4.0 do not have an inactive menubar
-        nStatus = 0; 
-        nHotlightStatus = 0;
-      }
-      else
-      { 
-        nStatus = ODS_INACTIVE;
-        nHotlightStatus = ODS_HOTLIGHT|ODS_INACTIVE;
-      }
-
-      CNewMenu* pNewMenu = DYNAMIC_DOWNCAST(CNewMenu,GetMenu());
-      if (!m_bInMenuLoop && nHitCode == HTMENU)
-      {
-        // I support only CNewMenu ownerdrawings menu!!
-        if(pNewMenu)
-        {
-          UINT nItemIndex = MenuItemFromPoint(m_hWnd, pNewMenu->m_hMenu, point);
-
-          if ( nItemIndex!=(UINT)-1 )
-          {
-            if(m_menubarItemIndex!=nItemIndex)
-            { 
-              // Clear the old Item
-              DrawMenubarItem(this,pNewMenu,m_menubarItemIndex,nStatus);
-
-              // Draw the hotlight item.
-              if(DrawMenubarItem(this,pNewMenu,nItemIndex,nHotlightStatus))
-              {
-                // Set a new Timer
-                if(m_TimerID==NULL)
-                {
-                  m_TimerID=GetSafeTimerID(m_hWnd,100);
-                }
-                m_menubarItemIndex = nItemIndex;
-              }
-              else
-              {
-                m_menubarItemIndex = UINT(-1);
-              }
-            }
-            else
-            {
-              // Draw the hotlight item again.
-              if(CNewMenu::m_dwLastActiveItem==NULL && 
-                 DrawMenubarItem(this,pNewMenu,nItemIndex,nHotlightStatus))
-              {
-                // Set a new Timer
-                if(m_TimerID==NULL)
-                {
-                  m_TimerID=GetSafeTimerID(m_hWnd,100);
-                }
-                m_menubarItemIndex = nItemIndex;
-              }
-            }
-            return nHitCode;
-          }
-        }
-      }
-
-      if (m_menubarItemIndex!=UINT(-1))
-      {
-        DrawMenubarItem(this,pNewMenu,m_menubarItemIndex,nStatus);
-        m_menubarItemIndex=UINT(-1);
-      }
-      if(m_TimerID!=NULL)
-      {
-        KillTimer(m_TimerID);
-        m_TimerID=NULL;
-      }
-    }
-    return nHitCode;
-  }
-
-  void CMDIFrameWndXP::OnMeasureItem(int nIDCtl, LPMEASUREITEMSTRUCT lpMIS) 
-  {
-    if(!CNewMenu::OnMeasureItem(GetCurrentMessage()))
-    {
-      CMDIFrameWnd::OnMeasureItem(nIDCtl, lpMIS);
-    }
-  } 
-
-  LRESULT CMDIFrameWndXP::OnMenuChar(UINT nChar, UINT nFlags, CMenu* pMenu) 
-  {
-    LRESULT lresult;
-    if( DYNAMIC_DOWNCAST(CNewMenu,pMenu) )
-      lresult=CNewMenu::FindKeyboardShortcut(nChar, nFlags, pMenu);
-    else
-      lresult=CMDIFrameWnd::OnMenuChar(nChar, nFlags, pMenu);
-    
-    return lresult;
-  }
-
-  void CMDIFrameWndXP::OnNcPaint()
-  {
-    CMDIFrameWnd::OnNcPaint();
-    DrawSmallBorder();
-  }
-  
-  void CMDIFrameWndXP::OnPaint()
-  {
-    CMDIFrameWnd::OnPaint();
-    DrawSmallBorder();
-  }
-
-#if _MFC_VER < 0x0700 
- 	void CMDIFrameWndXP::OnActivateApp(BOOL bActive, HTASK hTask)
-  {
-    CMDIFrameWnd::OnActivateApp(bActive, hTask);
-    DrawSmallBorder();
-	m_bFocus= bActive;
-	if( bActive) {
-		if( m_bInactivo && !m_bConectando) {
-			KillTimer(50000);
-			SetTimer(50000, 100, NULL);
+		CMFCRibbonStatusBarPaneEx *elemento= (CMFCRibbonStatusBarPaneEx *)m_wndStatusBar.FindElement(ID_STATUSBAR_TEXTO);
+		if(elemento) {
+			elemento->SetBackground();
+			elemento->SetFgColor();
+			elemento->Redraw();
 		}
-	}
-  }
-#else
-  void CMDIFrameWndXP::OnActivateApp(BOOL bActive, DWORD dwThreadID)
-  {
-    CMDIFrameWnd::OnActivateApp(bActive, dwThreadID);
-    DrawSmallBorder();
-	m_bFocus= bActive;
-	if( bActive) {
-		if( m_bInactivo && !m_bConectando) {
-			KillTimer(50000);
-			SetTimer(50000, 100, NULL);
+	} else if(nIDEvent==TIMER_UPDATE_TREE) {
+		KillTimer(TIMER_UPDATE_TREE);
+		CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+		int sel= pPrevActiveWnd->GetActiveTab();
+		if( sel!=-1) {
+
+			CWnd *tab= pPrevActiveWnd->GetTabWnd(sel);
+			if(((CMDIChildWnd *)tab)->GetActiveView())
+				m_pNavBar.SetSel(((CMDIChildWnd *)tab)->GetActiveView()->GetRuntimeClass()->m_lpszClassName);
 		}
+	} else if(nIDEvent==TIMER_UPDATE_TOOLBAR) {
+
+		CMFCRibbonProgressBar *progressbar= (CMFCRibbonProgressBar *)m_wndStatusBar.FindElement(ID_STATUSBAR_BARRADEPROGRESO);
+		if(!progressbar) 
+			return;
+		int pos= progressbar->GetPos();
+		if(pos==100)
+			pos=0;
+		pos++;
+		progressbar->SetPos(pos);
 	}
+	CMDIFrameWndEx::OnTimer(nIDEvent);
   }
-#endif
-
-  void CMDIFrameWndXP::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized )
-  {
-    CMDIFrameWnd::OnActivate(nState,pWndOther, bMinimized );
-    DrawSmallBorder();
-  }
-
-  void CMDIFrameWndXP::DrawSmallBorder()
-  {
-    // To eliminate small border between menu and client rect
-    MENUINFO menuInfo = {0};
-    menuInfo.cbSize = sizeof(menuInfo);
-    menuInfo.fMask = MIM_BACKGROUND;
-    if(::GetMenuInfo(::GetMenu(m_hWnd),&menuInfo) && menuInfo.hbrBack)
-    {
-      CDC* pDC = GetWindowDC(); 
-	  if( !pDC || !pDC->m_hDC)
-		  return;
-      CRect clientRect;
-      GetClientRect(clientRect);
-      ClientToScreen(clientRect);
-      CRect windowRect;
-      GetWindowRect(windowRect);
-      CRect rect(clientRect.left-windowRect.left,clientRect.top-windowRect.top-1,clientRect.right-windowRect.left,clientRect.top-windowRect.top);
-
-      CBrush *pBrush = CBrush::FromHandle(menuInfo.hbrBack);
-      // need for win95/98/me
-      VERIFY(pBrush->UnrealizeObject());
-      CPoint oldOrg = pDC->SetBrushOrg(0,0);
-      pDC->FillRect(rect,pBrush);
-      pDC->SetBrushOrg(oldOrg);
-      // must be called
-      ReleaseDC(pDC);
-    }
-  }
-
- void CMDIFrameWndXP::OnCreateChild(HMENU menu) {
-
-	 CNewMenu *nose= (CNewMenu *)CNewMenu::FromHandle(menu);
-	 if( nose) {
-		 if( nose->GetSafeHmenu() && nose->GetMenuItemCount()) {
-			 CNewMenu *submenu, *add;
-			 CString nombre;
-			 CMiscelaneosEx *info;
-
-			 for( int i=0; i<m_pMenus.GetCount(); i++) {
-				 submenu= (CNewMenu *)nose->GetSubMenu(0);
-				 if(submenu) {
-					 submenu->GetMenuString(0, nombre, MF_BYPOSITION);
-					 info= m_pMenus.GetAt(i);
-					 if( nombre!=info->GetNombre()) {
-						 add= (CNewMenu *) info->GetData();
-						 if( i==0)
-							 submenu->ModifyMenu(i, MF_BYPOSITION | MF_POPUP, (UINT)add->m_hMenu, info->GetNombre());
-						 else 
-							 submenu->InsertMenu(i, MF_BYPOSITION | MF_POPUP, (UINT) add->m_hMenu, info->GetNombre());
-					 }
-				 }
-			 }
-		 }
-	 }
-  }
-
 
  void CMDIFrameWndXP::OnEditPaste()
  {
@@ -684,16 +330,16 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
  void CMDIFrameWndXP::LoadState() {
 
+	 AfxGetApp()->WriteProfileInt("control","close", 0);
 	 CWaitCursor wait;
-
-	 m_LogoMdiClientWnd.Pause();
-
+	 if(m_pFlash) 
+		 m_pFlash->ShowWindow(SW_HIDE);
 	 // cargar el estado de la barra de navegacion.
-	 /*m_pNavBar.LoadStateBar("Barras\\Barras");
-
-	 if( !AfxGetApp()->GetProfileInt("barras\\Barras", "store",0)) {
-		 m_pNavBar.ShowWindow(SW_SHOW);
-	 }*/
+	 if( !AfxGetApp()->GetProfileInt("barras", "store",0)) {
+		 m_pNavBar.ShowPane(true,false,false);
+	 } else {
+		 ((CWinAppEx *)AfxGetApp())->LoadState(this);
+	 }
 
 	 int nfocus;
 	 CString szDocumentos=AfxGetApp()->GetProfileString("control", "classname");
@@ -715,7 +361,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 if( !doc)
 		 return;
 
-	 for( int i=documentos.GetCount()-1; i>=0; i--) {
+	 for( int i=0;i<documentos.GetCount(); i++) {
 
 		 temporal= documentos.GetAt(i);
 		 POSITION pos= doc->GetFirstDocTemplatePosition();
@@ -725,7 +371,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			 if( temp && temp->GetViewClassName()==temporal) {
 
 				 PostMessage(WM_TREENAVEGADOR, NM_DBLCLK, (LPARAM) temp);
-				 Sleep(10);
+				 XSleep(100);
 				 if( nfocus==i)
 					 focus= temp;
 				 break;
@@ -734,8 +380,11 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 }
 	 if( focus)
 		 PostMessage(WM_TREENAVEGADOR, NM_DBLCLK, (LPARAM) focus);
-	 if(m_mdiTabs.GetItemCount()==0)
-		 m_LogoMdiClientWnd.Start();
+	 if(m_pFlash) {
+		CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+		if(!pPrevActiveWnd->GetTabsNum())
+			m_pFlash->ShowWindow(SW_SHOW);
+	 }
  }
 
  bool CMDIFrameWndXP::AddAcelerator(ACCEL nueva) {
@@ -795,7 +444,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 return temp;
  }
 
- bool CMDIFrameWndXP::LoadDocument( CNewMenu *menu, HTREEITEM hRoot, CString nombre, UINT nIDResource,CRuntimeClass* pViewClass, const CMiscelaneosEx &permisos, DWORD grupo, CRuntimeClass *pDocClass/*=NULL*/) {
+ bool CMDIFrameWndXP::LoadDocument( CMenu *menu, HTREEITEM hRoot, CString nombre, UINT nIDResource,CRuntimeClass* pViewClass, const CMiscelaneosEx &permisos, DWORD grupo, CRuntimeClass *pDocClass/*=NULL*/) {
 
 	 if(grupo==0)
 		 return LoadDocument(menu, hRoot, nombre, nIDResource, pViewClass, pDocClass);
@@ -805,7 +454,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 return false;
  }
 
- bool CMDIFrameWndXP::LoadDocument( CNewMenu *menu, HTREEITEM hRoot, CString nombre, UINT nIDResource,CRuntimeClass* pViewClass, CRuntimeClass *pDocClass/*=NULL*/) {
+ bool CMDIFrameWndXP::LoadDocument( CMenu *menu, HTREEITEM hRoot, CString nombre, UINT nIDResource,CRuntimeClass* pViewClass, CRuntimeClass *pDocClass/*=NULL*/) {
 
 	 HTREEITEM item= ::IsWindow(m_pNavBar) ? m_pNavBar.m_Tree.InsertItem( nombre, hRoot) : NULL;
 
@@ -829,44 +478,39 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
  void CMDIFrameWndXP::SaveState() {
 
-	 if(AfxGetApp()->GetProfileInt("control", "notstore", 0)==0) {
-		 CString temp;
-		 TCITEM item;
-		 item.mask = TCIF_PARAM;
-		 HWND hWnd;
+	CString temp;
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
 
-		 for( int i=0; i<m_mdiTabs.GetItemCount(); i++) {
+	 for(int i=0; i<pPrevActiveWnd->GetTabsNum(); i++) {
 
-			 m_mdiTabs.GetItem(i, &item);
-			 hWnd = HWND(item.lParam);
-			 for( CWnd *child=m_LogoMdiClientWnd.GetTopWindow(); child; child =child->GetNextWindow()) {
-
-				 if( child && hWnd ==(*child) && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
-					 if( !temp.IsEmpty())
-						 temp+=",";
-					 temp+=((CMDIChildWnd *) child)->GetActiveView()->GetRuntimeClass()->m_lpszClassName;
-					 break;
-				 }
-			 }
-		 }
-		 AfxGetApp()->WriteProfileString("control","classname",temp);
-		 AfxGetApp()->WriteProfileInt("control","focus", m_mdiTabs.GetCurFocus());
-	 } else {
-		 AfxGetApp()->WriteProfileString("control","classname","");
-		 AfxGetApp()->WriteProfileInt("control","focus", -1);
+		 CWnd *ventana= pPrevActiveWnd->GetTabWnd(i);
+		 if( !temp.IsEmpty())
+			 temp+=",";
+		 temp+=((CMDIChildWnd *)ventana)->GetActiveView()->GetRuntimeClass()->m_lpszClassName;
 	 }
-	 AfxGetApp()->WriteProfileInt("barras\\Barras", "store",1);
-	 SaveBarState("barras\\Barras");
-	 if(::IsWindow(m_pNavBar))
-		m_pNavBar.SaveBar("Barras\\Barras");
+	 AfxGetApp()->WriteProfileString("control","classname",temp);
+	 AfxGetApp()->WriteProfileInt("control","focus", pPrevActiveWnd->GetActiveTab());
+	 AfxGetApp()->WriteProfileInt("barras", "store",1);
+
+	 // guardamos el estado de las ventanas y borramos todas las barras laterales
+	 ((CWinAppXP *)AfxGetApp())->SetRegistryBase("Workspace1");
+	 ((CWinAppXP *)AfxGetApp())->SaveState(NULL, &m_Impl);
+	 CMyRegKey key(((CWinAppXP *)AfxGetApp())->GetRegSectionPath());
+	 CStringArray valores;
+	 key.EnumRegKey("", valores);
+	 for(int i=0; i<valores.GetCount(); i++) {
+
+		 if(valores[i].Find("Pane")!=-1 || valores[i].Find("DockingManager")!=-1) 
+			 key.DeleteRegKey(valores[i], "");
+	 }
+	 ((CWinAppXP *)AfxGetApp())->SetRegistryBase("Workspace");
  }
 
  BOOL CMDIFrameWndXP::PreCreateWindow(CREATESTRUCT& cs)
  {
-	 
 	 if( AfxGetApp()->GetProfileInt("control", "loadstate", 0)) {
 		 CRegKey key;
-		 if(	key.Open(HKEY_CURRENT_USER, CApplicacion::GetAppKey() +  "\\control")==ERROR_SUCCESS) {
+		 if(key.Open(HKEY_CURRENT_USER, CApplicacion::GetAppKey() +  "\\control")==ERROR_SUCCESS) {
 
 			 key.DeleteValue("posicion");
 			 key.DeleteValue("status");
@@ -886,95 +530,38 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			 key.Close();
 		 }
 	 }
-	 int show= AfxGetApp()->GetProfileInt("control", "status", -1);
-	 if( show!=-1) { // ya se habia escrito
-
-		 if( show!= SW_SHOWMINIMIZED)
-			 AfxGetApp()->m_nCmdShow= show;
-		 RECT *myrect;
-		 CRect rect(0,0,0,0);
-		 show = 0;
-		 if( AfxGetApp()->GetProfileBinary("control", "posicion", (LPBYTE*)&myrect, (UINT *)&show)) {
-			 rect= *myrect;
-			 delete [] myrect;
-			 if( rect.Width()>0 && rect.Height()>0) { // restauramos la posicion de la ventana
-
-				 if( rect.Height()<400)
-					 rect.bottom= rect.top+400;
-				 if( rect.Width()<400)
-					 rect.right= rect.left+400;	
-				 if( rect.left<0)
-					 rect.MoveToX(0);
-				 if( rect.top<0)
-					 rect.MoveToY(0);
-
-				 int x= GetSystemMetrics(SM_CXSCREEN);
-				 int y= GetSystemMetrics(SM_CYSCREEN);
-
-				 if( rect.left<x && rect.top<y) {
-
-					 if( rect.Height()<y && rect.Width()<x) {
-
-						 if( rect.right>x)
-							 rect.MoveToX(x-rect.Width());
-						 if( rect.bottom>y)
-							 rect.MoveToY(y-rect.Height());
-
-						 cs.x = rect.left;
-						 cs.y = rect.top;
-						 cs.cx= rect.Width();
-						 cs.cy= rect.Height();
-					 }
-				 }
-			 }
-		 }
-	 }
-	 return CMDIFrameWnd::PreCreateWindow(cs);
+	 return CMDIFrameWndEx::PreCreateWindow(cs);
  }
 
  void CMDIFrameWndXP::OnUpdateVentanas(CCmdUI *pCmdUI) {
 
-	 pCmdUI->Enable((pCmdUI->m_nID-VENTANAS_PREFIJO)<m_mdiTabs.GetItemCount());
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	pCmdUI->Enable((pCmdUI->m_nID-VENTANAS_PREFIJO)<pPrevActiveWnd->GetTabsNum());
  }
 
  void CMDIFrameWndXP::OnCommandVentanas(UINT id) {
-	 if((id-VENTANAS_PREFIJO)<m_mdiTabs.GetItemCount())
-		 m_mdiTabs.SetSelEx(id-VENTANAS_PREFIJO);
+
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 if((id-VENTANAS_PREFIJO)<pPrevActiveWnd->GetTabsNum())
+		 pPrevActiveWnd->SetActiveTab(id-VENTANAS_PREFIJO);
  }
 
  void CMDIFrameWndXP::OnUpdateFrameTitle(BOOL bAddToTitle)
  {
 	 FUNCTION_STACK_TRACE("AAAAAAAC");
-	 CMDIFrameWnd::OnUpdateFrameTitle(bAddToTitle);
-	 m_mdiTabs.Update();
-	 int sel= m_mdiTabs.GetCurSel();
-	 if( sel!=-1) {
-
-		 TCITEM item;
-		 item.mask = TCIF_PARAM;
-		 m_mdiTabs.GetItem(sel, &item);
-		 HWND hWnd = HWND(item.lParam);
-
-		 for (CWnd *child=m_LogoMdiClientWnd.GetTopWindow(); child; child =child->GetNextWindow()) 
-
-			 if( child && hWnd== (*child) && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
-
-				 CView *view= ((CMDIChildWnd *) child)->GetActiveView();
-				 if( view && ::IsWindow(m_pNavBar)) m_pNavBar.SetSel(view->GetRuntimeClass()->m_lpszClassName);
-				 break;
-			 }
-	 }
-	 if(m_mdiTabs.GetItemCount())
-		 m_LogoMdiClientWnd.Pause();
-	 else m_LogoMdiClientWnd.Start();
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 CMDIFrameWndEx::OnUpdateFrameTitle(bAddToTitle);
+	 KillTimer(TIMER_UPDATE_TREE);
+	 SetTimer(TIMER_UPDATE_TREE,100, NULL);
+	 if(m_pFlash)
+		m_pFlash->ShowWindow(pPrevActiveWnd->GetTabsNum() ? SW_HIDE : SW_SHOW);
  }
 
  BOOL CMDIFrameWndXP::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
  {
-	 if (CMDIFrameWnd::OnCreateClient(lpcs, pContext)){  
-		 m_LogoMdiClientWnd.SubclassWindow(m_hWndMDIClient); 
+	 if (CMDIFrameWndEx::OnCreateClient(lpcs, pContext)){  
 		 return TRUE ;
-	 } 
+	 }
 	 return FALSE ;
  }
 
@@ -986,14 +573,13 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			 CWaitCursor wait;
 			 CMultiDocTemplateXP* temp= (CMultiDocTemplateXP *)lParam;
 			 ASSERT(temp);
-			 CWnd *child=m_LogoMdiClientWnd.GetTopWindow();
-			 CWnd *view;
 
-			 for (; child; child =child->GetNextWindow()) {
+			 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
 
+			 for(int i=0; i<pPrevActiveWnd->GetTabsNum(); i++) {
+				 CWnd *child= pPrevActiveWnd->GetTabWnd(i);
 				 if(child && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
-					 for(view=((CMDIChildWnd *) child)->GetWindow(GW_CHILD); view; view= view->GetNextWindow()) {
-
+					 for(CWnd *view=((CMDIChildWnd *) child)->GetWindow(GW_CHILD); view; view= view->GetNextWindow()) {
 						 if( view && view->GetRuntimeClass()->m_lpszClassName==temp->GetViewClassName()) {
 							 child->BringWindowToTop();
 							 child->SetFocus();
@@ -1002,7 +588,8 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 					 }
 				 }
 			 }
-			 m_LogoMdiClientWnd.Pause();
+			 if(m_pFlash)
+				 m_pFlash->ShowWindow(SW_HIDE);
 			 temp->OpenDocumentFile(NULL);
 		 }
 	 } else if( wParam==100 && ::IsWindow(m_pNavBar)) {
@@ -1015,37 +602,58 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
  LRESULT CMDIFrameWndXP::OnStatusBar(WPARAM wParam, LPARAM lParam) {
 
+	 CMFCRibbonProgressBar *progressbar= (CMFCRibbonProgressBar *)m_wndStatusBar.FindElement(ID_STATUSBAR_BARRADEPROGRESO);
+	 if(!progressbar) 
+		 return 0;
+
 	 if( wParam==1 || wParam==4) { // agregamos un nuevo elemento
+		 
 		 m_ulRealizados= wParam==1 ? m_ulRealizados+1 : lParam;
 		 if( m_ulTotal) {
 			 int pos= (int) (m_ulRealizados*100)/m_ulTotal;
-			 m_wndStatusBar.SetPos(1,pos);
-			 char real[MAX_PATH],real1[MAX_PATH];
-			 CString atributo;
-			 _i64toa(m_ulRealizados, real, 10);
-			 _i64toa(m_ulTotal, real1, 10);
-			 atributo.Format( "%s de %s", real, real1);
-			 m_wndStatusBar.GetProgressCtrl(1)->SetWindowText(atributo);
+			 if(pos!=progressbar->GetPos())
+				progressbar->SetPos(pos);
 		 }
 	 } else if( wParam==0) {// iniciamos la busqueda donde lparam es el total
 
 		 m_ulTotal= lParam;
-		 m_wndStatusBar.GetProgressCtrl(1)->SetShowText(AfxGetApp()->GetProfileInt("toolbar", "showtext",false));
-		 m_wndStatusBar.GetProgressCtrl(1)->SetPos(0);
-
-	 } else if( wParam==2) { // terminamos la busqueda
-		 m_wndStatusBar.GetProgressCtrl(1)->SetShowText(true);
-		 m_wndStatusBar.GetProgressCtrl(1)->SetPos(0);
-		 if( m_ulTotal) {
-			 char real[MAX_PATH];
-			 CString atributo;
-			 _i64toa(m_ulTotal, real, 10);
-			 atributo.Format( "%s Resultado%s", real, m_ulTotal>1 ? "s" : "");
-			 m_wndStatusBar.GetProgressCtrl(1)->SetWindowText(atributo);
+		 CMFCRibbonStatusBarPane *total= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_TOTAL);
+		 if(total) {
+			 CString temp;
+			 temp.Format("%d Resultado", m_ulTotal);
+			 if(m_ulTotal!=1)
+				 temp+="s";
+			 total->SetText(temp);
+			 total->Redraw();
 		 }
+		 progressbar->SetPos(0);
+	 } else if( wParam==2) { // terminamos la busqueda
+
+		 progressbar->SetPos(0);
 		 m_ulTotal=0;
 		 m_ulRealizados=0;
-	 }
+	 } else if(wParam==5) {
+		 if(lParam==1) {
+			 KillTimer(TIMER_UPDATE_TOOLBAR);
+			 progressbar->SetInfiniteMode(true);
+			 progressbar->SetPos(0);
+			 SetTimer(TIMER_UPDATE_TOOLBAR, 10,NULL);
+			 CMFCRibbonStatusBarPane *total= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_TOTAL);
+			 if(total) {
+				 total->SetText("Cargando...");
+				 total->Redraw();
+			 }
+		 } else {
+			 KillTimer(TIMER_UPDATE_TOOLBAR);
+			 progressbar->SetInfiniteMode(false);
+			 progressbar->SetPos(0);
+			 CMFCRibbonStatusBarPane *total= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_TOTAL);
+			 if(total) {
+				 total->SetText("");
+				 total->Redraw();
+			 }
+		 }
+	 } 
 	 return 0;
  }
 
@@ -1064,10 +672,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		 }
 	 }
 
-	 // modificamos el menu del mainframe
-	 OnCreateChild(m_DefaultNewMenu.m_hMenu);
-
-	 CDocManager *doc= AfxGetApp()->m_pDocManager;
+	 /*CDocManager *doc= AfxGetApp()->m_pDocManager;
 	 if( doc) {
 		 POSITION pos= doc->GetFirstDocTemplatePosition();
 		 CMultiDocTemplate *temp;
@@ -1076,7 +681,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			 if( temp)
 				 OnCreateChild(temp->m_hMenuShared);
 		 }
-	 }
+	 }*/
 	 return true;
  }
 
@@ -1095,10 +700,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		 }
 	 }
 
-	 // modificamos el menu del mainframe
-	 OnCreateChild(m_DefaultNewMenu.m_hMenu);
-
-	 CDocManager *doc= AfxGetApp()->m_pDocManager;
+	 /*CDocManager *doc= AfxGetApp()->m_pDocManager;
 	 if( doc) {
 		 POSITION pos= doc->GetFirstDocTemplatePosition();
 		 CMultiDocTemplate *temp;
@@ -1107,7 +709,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 			 if( temp)
 				 OnCreateChild(temp->m_hMenuShared);
 		 }
-	 }
+	 }*/
 	 return true;
  }
 
@@ -1115,38 +717,69 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	 ASSERT_VALID(this);
 	 CString temp= (const char *) lParam;
-	 m_wndStatusBar.RestorePane(0);
-	 m_wndStatusBar.SetWindowText(temp);
+	 CMFCRibbonStatusBarPaneEx *elemento= (CMFCRibbonStatusBarPaneEx *)m_wndStatusBar.FindElement(ID_STATUSBAR_TEXTO);
+	 if(elemento) {
+		 elemento->SetBackground();
+		 elemento->SetFgColor();
+	 }
 	 if( wParam>1) {
-
-		 m_wndStatusBar.SavePane(0);
-		 m_wndStatusBar.SetBkColor(0, wParam==2 ? GetSysColor(COLOR_ACTIVECAPTION) : RGB(255,0,0));
-		 m_wndStatusBar.SetFgColor(0, GetSysColor(COLOR_CAPTIONTEXT));
+		 if(elemento) {
+			 elemento->SetBackground(wParam==2 ? GetSysColor(COLOR_ACTIVECAPTION) : RGB(255,0,0));
+			 elemento->SetFgColor(GetSysColor(COLOR_CAPTIONTEXT));
+		 }
 		 MessageBeep(MB_OK);
-		 SetTimer( TIMER_RESTORE_STATUS_BAR, MESSAGE_DELAY, NULL);
+		 SetTimer(TIMER_RESTORE_STATUS_BAR, MESSAGE_DELAY, NULL);
+	 }
+	 if(elemento) {
+		 elemento->SetText(temp);
+		 elemento->Redraw();
 	 }
 	 return 0;
  } 
 
  LRESULT CMDIFrameWndXP::OnThreadResult(WPARAM wParam, LPARAM lParam) {
 
-	 switch( wParam) {
+	switch( wParam) {
 		case 0:
+			m_nCurrentHilos--;
 			if( m_nAnimation) {
-				m_nCurrentHilos--;
-			} else m_wndStatusBar.Decrement(4);
+				if(m_nCurrentHilos==0) {
+					CMFCRibbonStatusBarPane *elemento= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_ANIMACIONPROGRESO);
+					if(elemento) 
+						elemento->StopAnimation();	
+				}
+			} else {
+				CString temp;
+				temp.Format("%d", m_nCurrentHilos);
+				CMFCRibbonStatusBarPane *elemento= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_ANIMACIONPROGRESO);
+				if(elemento) 
+					elemento->SetText(temp);
+			}
 			PostMessage( WM_STATUSBAR, 2);
 			break;
 		case 1:
-			if( m_nAnimation) {
-				m_nCurrentHilos++;
-			} else m_wndStatusBar.Increment(4);
+			m_nCurrentHilos++;
+			if( m_nAnimation) {	
+				if(m_nCurrentHilos==1) {
+					CMFCRibbonStatusBarPane *elemento= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_ANIMACIONPROGRESO);
+					if(elemento) 
+						elemento->StartAnimation();
+				}
+			} else {
+				CString temp;
+				temp.Format("%d", m_nCurrentHilos);
+				CMFCRibbonStatusBarPane *elemento= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_ANIMACIONPROGRESO);
+				if(elemento) 
+					elemento->SetText(temp);
+			}
 			break;
 		default:
 			{
-				CString temp;
+				/*CString temp;
 				temp.Format("conector\\servidor%d", (UINT)lParam);
-				m_wndStatusBar.SetText(3, AfxGetApp()->GetProfileString(temp, "servidor"));
+				CMFCRibbonStatusBarPane *elemento= (CMFCRibbonStatusBarPane *)m_wndStatusBar.FindElement(ID_STATUSBAR_SERVIDOR);
+				if(elemento) 
+					elemento->SetText(AfxGetApp()->GetProfileString(temp, "servidor"));*/
 			}
 			break;
 	 }
@@ -1167,45 +800,24 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
  void CMDIFrameWndXP::SendMessageBroadCast(UINT message,WPARAM wParam, LPARAM lParam) {
 
-	 for ( CWnd *child=m_LogoMdiClientWnd.GetTopWindow(); child; child =child->GetNextWindow()) {
-		 if(child && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
-			 CView *vista=((CMDIChildWnd *) child)->GetActiveView();
-			 if( vista && ::IsWindow(*vista))
-				 vista->SendMessage(message, wParam, lParam);
-		 }
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 for( int i=0 ;i< pPrevActiveWnd->GetTabsNum(); i++) {
+		 CWnd *ventana= pPrevActiveWnd->GetTabWnd(i);
+		 ventana->GetNextWindow(GW_CHILD)->SendMessage(message, wParam, lParam);
 	 }
  }
 
  void CMDIFrameWndXP::OnClose()
  {
-	 if( AfxGetApp()->GetProfileInt("control", "notstore", 0)) {
-		 AfxGetApp()->WriteProfileInt("control","status",SW_SHOWMINIMIZED);
-		 AfxGetApp()->WriteProfileBinary("control", "posicion", 0, 1);
-	 } else {
-		 WINDOWPLACEMENT wp;
-		 GetWindowPlacement(&wp);
-		 AfxGetApp()->WriteProfileInt("control","status", wp.showCmd);
-		 AfxGetApp()->WriteProfileBinary("control", "posicion", (LPBYTE)&wp.rcNormalPosition, (UINT) sizeof( wp.rcNormalPosition));
-	 }
 	 SaveState();
-	 AfxGetApp()->WriteProfileInt("control","notstore",0);
-
-	 CMDIFrameWnd::OnClose();
+	 CMDIFrameWndEx::OnClose();
+	 AfxGetApp()->WriteProfileInt("control","close", 1);
  }
 
  void CMDIFrameWndXP::OnVerNavegador()
  {
-	 if(::IsWindow(m_pNavBar)) {
-		if( !m_pNavBar.IsWindowVisible()) 
-
-		 if(m_pNavBar.IsHide()) {
-
-			 m_pNavBar.InitShow();
-			 return;
-		 }
-		 m_pNavBar.ShowWindow((m_pNavBar.IsWindowVisible()) == 0);
-		 RecalcLayout();
-	 }
+	if(::IsWindow(m_pNavBar)) 
+		m_pNavBar.ShowPane(!m_pNavBar.IsWindowVisible(), false, true);
  }
 
  void CMDIFrameWndXP::OnUpdateVerNavegador(CCmdUI *pCmdUI)
@@ -1222,38 +834,44 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
  void CMDIFrameWndXP::OnNextPane()
  {
-	 m_mdiTabs.SetSelEx(m_mdiTabs.GetCurSel()+1);
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 pPrevActiveWnd->SetActiveTab(pPrevActiveWnd->GetActiveTab()+1);
  }
 
  void CMDIFrameWndXP::OnUpdateNextPane(CCmdUI *pCmdUI)
  {
-	 pCmdUI->Enable((m_mdiTabs.GetCurSel()<(m_mdiTabs.GetItemCount()-1)));
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 pCmdUI->Enable((pPrevActiveWnd->GetActiveTab()<(pPrevActiveWnd->GetTabsNum()-1)));
  }
 
  void CMDIFrameWndXP::OnPrevPane()
  {
-	 m_mdiTabs.SetSelEx(m_mdiTabs.GetCurSel()-1);
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 pPrevActiveWnd->SetActiveTab(pPrevActiveWnd->GetActiveTab()-1);
  }
 
  void CMDIFrameWndXP::OnUpdatePrevPane(CCmdUI *pCmdUI)
  {
-	 pCmdUI->Enable(m_mdiTabs.GetCurSel()>0);
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 pCmdUI->Enable(pPrevActiveWnd->GetActiveTab()>0);
  }
 
  void CMDIFrameWndXP::OnCloseAll() {
 
-	 int pos= m_mdiTabs.GetCurSel();
+	 CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	 int pos= pPrevActiveWnd->GetActiveTab();
 	 if( pos>=0) {
 		 CWaitCursor wait;
-		 DWORD data= m_mdiTabs.GetItemData(pos);
-		 DWORD del;
-		 ASSERT(data);
-		 pos=0;
-		 while( m_mdiTabs.GetItemCount()>1) {
-			 del= m_mdiTabs.GetItemData(pos);
-			 if( del==data)
-				 pos++;
-			 else ::SendMessage(HWND(del), WM_CLOSE, 0,0);
+		 CWnd *actual= pPrevActiveWnd->GetTabWnd(pos);
+		 CWnd *del;
+		 ASSERT(actual);
+		 for(int i=0; i<pPrevActiveWnd->GetTabsNum(); i++) {
+
+			 del= pPrevActiveWnd->GetTabWnd(i);
+			 if( del!=actual) {
+				 del->SendMessage(WM_CLOSE);
+				 i--;
+			 }
 		 }
 	 }
  }
@@ -1264,8 +882,8 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 HINSTANCE hDLL;
 	 int i=0;
 	 LOADFUNCIONES lpfnInicial;
-	 CMiscelaneosEx *info,*acel;
-	 CNewMenu *menu;
+	 CMiscelaneosEx *acel;
+	 CMenu *menu;
 	 CString temp;
 
 	 // cargamos todos los nombres de las funciones
@@ -1294,35 +912,25 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 					 if( strLabel.IsEmpty())
 						 continue;
-					 if(strGrupo.IsEmpty())
-						 strGrupo= ::IsWindow(m_pNavBar) ? m_pNavBar.m_Tree.GetItemText(m_pNavBar.m_Tree.GetRootItem()) : "";
-					 HTREEITEM item= ::IsWindow(m_pNavBar) ? m_pNavBar.FindItem( strGrupo) : NULL;
-					 info= m_pMenus.FindNoCase(strGrupo);
+					 HTREEITEM item= ::IsWindow(m_pNavBar) ? m_pNavBar.FindItem(strGrupo) : NULL;
 					 if( item==NULL && ::IsWindow(m_pNavBar)) {
-						 item= m_pNavBar.m_Tree.InsertItem(strGrupo);
-						 m_pNavBar.m_Tree.SetItemState(item, TVIS_BOLD,TVIS_BOLD);
-						}
+						 if(strGrupo.IsEmpty()) {
+							 item= TVI_ROOT;
+						 } else {
+							 item= m_pNavBar.m_Tree.InsertItem(strGrupo);
+							 m_pNavBar.m_Tree.SetItemState(item, TVIS_BOLD,TVIS_BOLD);
+						 }
+					 }
 					 if( item && ::IsWindow(m_pNavBar))
 						 item= m_pNavBar.m_Tree.InsertItem( strLabel,item);
 					 if( item && ::IsWindow(m_pNavBar))
 						 m_pNavBar.m_Tree.SetItemData( item, (DWORD) pDocTemplate);
 
 					 temp= ParseAcelerator(strLabel, m_pAceleradores.GetCount());
-
 					 acel= m_pAceleradores.Add(pDocTemplate->GetViewClassName(), m_pAceleradores.GetCount()+ACELERADORES_PREFIJO);
-
-					 if( info) {
-						 menu= (CNewMenu *) info->GetData();
-						 menu->AppendMenu(MF_STRING, acel->GetData(), temp);
-					 } else {
-						 menu= new CNewMenu();
-						 menu->CreateMenu();
-						 menu->AppendMenu(MF_STRING, acel->GetData(), temp);
-						 m_pMenus.Add(strGrupo, (DWORD) menu);
-						}
-					}
 				}
-			}
+			 }
+		 }
 	 }
 	 if(::IsWindow(m_pNavBar))
 		 m_pNavBar.m_Tree.Expand( hRoot, TVE_EXPAND);
@@ -1335,8 +943,8 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 HINSTANCE hDLL;
 	 int i=0;
 	 LOADFUNCIONES lpfnInicial;
-	 CMiscelaneosEx *info,*acel;
-	 CNewMenu *menu;
+	 CMiscelaneosEx *acel;
+	 CMenu *menu;
 	 CString temp;
 
 	 // cargamos todos los nombres de las funciones
@@ -1365,14 +973,15 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 					 if( strLabel.IsEmpty())
 						 continue;
-					 if(grupo.IsEmpty())
-						 grupo= ::IsWindow(m_pNavBar) ? m_pNavBar.m_Tree.GetItemText(m_pNavBar.m_Tree.GetRootItem()) : "";
 					 HTREEITEM item= ::IsWindow(m_pNavBar) ? m_pNavBar.FindItem( grupo) : NULL;
-					 info= m_pMenus.FindNoCase(grupo);
 					 if( item==NULL && ::IsWindow(m_pNavBar)) {
-						 item= m_pNavBar.m_Tree.InsertItem(grupo);
-						 m_pNavBar.m_Tree.SetItemState(item, TVIS_BOLD,TVIS_BOLD);
-						}
+						 if(grupo.IsEmpty()) {
+							 item= TVI_ROOT;
+						 } else {
+							 item= m_pNavBar.m_Tree.InsertItem(grupo);
+							 m_pNavBar.m_Tree.SetItemState(item, TVIS_BOLD,TVIS_BOLD);
+						 }
+					 }
 					 if( item && ::IsWindow(m_pNavBar))
 						 item= m_pNavBar.m_Tree.InsertItem( strLabel,item);
 					 if( item && ::IsWindow(m_pNavBar))
@@ -1381,19 +990,9 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 					 temp= ParseAcelerator(strLabel, m_pAceleradores.GetCount());
 
 					 acel= m_pAceleradores.Add(pDocTemplate->GetViewClassName(), m_pAceleradores.GetCount()+ACELERADORES_PREFIJO);
-
-					 if( info) {
-						 menu= (CNewMenu *) info->GetData();
-						 menu->AppendMenu(MF_STRING, acel->GetData(), temp);
-					 } else {
-						 menu= new CNewMenu();
-						 menu->CreateMenu();
-						 menu->AppendMenu(MF_STRING, acel->GetData(), temp);
-						 m_pMenus.Add(grupo, (DWORD) menu);
-						}
-					}
 				}
 			}
+		 }
 	 }
 	 if(::IsWindow(m_pNavBar))
 		m_pNavBar.m_Tree.Expand( hRoot, TVE_EXPAND);
@@ -1404,7 +1003,7 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	 CString temp;
 	 temp.Format( "\"%s\"",CApplicacion::GetAppPath("jayuda.exe"));
-	 CWnd *child=m_LogoMdiClientWnd.GetTopWindow();
+	 CWnd *child= m_wndClientArea.GetTopWindow();
 	 if( child && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
 		 
 		 CView *view= ((CMDIChildWnd *) child)->GetActiveView();
@@ -1417,89 +1016,349 @@ int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	 WinExec( temp, SW_NORMAL);
  }
 
- void CMDIFrameWndXP::LoadBarState(LPCTSTR lpszProfileName)
-{
-	CDockState state;
-	state.LoadState(lpszProfileName);
-	SetDockState(state);
-}
-
-void CMDIFrameWndXP::SetDockState(const CDockState& state)
-{
-	int i;
-
-	// first pass through barinfo's sets the m_pBar member correctly
-	// creating floating frames or docking floating controls if necessary
-	for (i = 0; i < state.m_arrBarInfo.GetSize(); i++)
-	{
-		CControlBarInfo* pInfo = (CControlBarInfo*)state.m_arrBarInfo[i];
-		ASSERT(pInfo != NULL);
-		if (pInfo->m_bFloating) // control is floating in the loading state
-		{
-			// need to create floating frame to match
-			CMiniDockFrameWnd* pDockFrame = CreateFloatingFrame(
-				pInfo->m_bHorz ? CBRS_ALIGN_TOP : CBRS_ALIGN_LEFT);
-			ASSERT(pDockFrame != NULL);
-			CRect rect(pInfo->m_pointPos, CSize(10, 10));
-			pDockFrame->CalcWindowRect(&rect);
-			pDockFrame->SetWindowPos(NULL, rect.left, rect.top, 0, 0,
-				SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
-			CDockBar* pDockBar =
-				(CDockBar*)pDockFrame->GetDlgItem(AFX_IDW_DOCKBAR_FLOAT);
-			ASSERT(pDockBar != NULL);
-			ASSERT_KINDOF(CDockBar, pDockBar);
-			pInfo->m_pBar = pDockBar;
-		}
-		else // regular dock bar or toolbar in the loading state
-		{
-			pInfo->m_pBar = GetControlBar(pInfo->m_nBarID);
-			// ASSERT(pInfo->m_pBar != NULL); //toolbar id's probably changed
-			if (pInfo->m_pBar!=NULL && (pInfo->m_pBar->m_pDockBar != NULL) && 
-				(pInfo->m_pBar->m_pDockBar->m_bFloating)) // control is floating in the current state
-			{
-				// need to dock the control bar
-				DockControlBar (pInfo->m_pBar);
-			}
-		}
-		if (pInfo->m_pBar != NULL)
-			pInfo->m_pBar->m_nMRUWidth = pInfo->m_nMRUWidth;
-	}
-
-	// the second pass will actually dock all of the control bars and
-	//  set everything correctly
-	for (i = 0; i < state.m_arrBarInfo.GetSize(); i++)
-	{
-		CControlBarInfo* pInfo = (CControlBarInfo*)state.m_arrBarInfo[i];
-		ASSERT(pInfo != NULL);
-		if (pInfo->m_pBar != NULL)
-			pInfo->m_pBar->SetBarInfo(pInfo, this);
-	}
-
-	// last pass shows all the floating windows that were previously shown
-	for (i = 0; i < state.m_arrBarInfo.GetSize(); i++)
-	{
-		CControlBarInfo* pInfo = (CControlBarInfo*)state.m_arrBarInfo[i];
-		ASSERT(pInfo != NULL);
-		// ASSERT(pInfo->m_pBar != NULL);
-		if(pInfo->m_pBar != NULL)
-		{
-			if (pInfo->m_bFloating)
-			{
-				CDockBar* pDockBar = (CDockBar*)pInfo->m_pBar;
-				ASSERT_KINDOF(CDockBar, pDockBar);
-				if (pDockBar->GetDockedVisibleCount() > 0)
-				{
-    				CFrameWnd* pFrameWnd = pInfo->m_pBar->EnsureParentFrame();
-					pFrameWnd->RecalcLayout();
-					pFrameWnd->ShowWindow(SW_SHOWNA);
-				}
-			}
-		}
-	}
-	DelayRecalcLayout();
-}
-
 CTreeNavBar	*CMDIFrameWndXP::GetNavigateBar() {
 
 	return &m_pNavBar;
+}
+
+void CMDIFrameWndXP::OnApplicationLook(UINT id)
+{
+	CWaitCursor wait;
+
+	((CWinAppXP *)AfxGetApp())->m_nAppLook = id;
+
+	switch (((CWinAppXP *)AfxGetApp())->m_nAppLook)
+	{
+	case ID_VIEW_APPLOOK_WIN_2000:
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManager));
+		break;
+
+	case ID_VIEW_APPLOOK_OFF_XP:
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOfficeXP));
+		break;
+
+	case ID_VIEW_APPLOOK_WIN_XP:
+		CMFCVisualManagerWindows::m_b3DTabsXPTheme = TRUE;
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows));
+		break;
+
+	case ID_VIEW_APPLOOK_OFF_2003:
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2003));
+		CDockingManager::SetDockingMode(DT_SMART);
+		break;
+
+	case ID_VIEW_APPLOOK_VS_2005:
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerVS2005));
+		CDockingManager::SetDockingMode(DT_SMART);
+		break;
+
+	default:
+		switch (((CWinAppXP *)AfxGetApp())->m_nAppLook)
+		{
+		case ID_VIEW_APPLOOK_OFF_2007_BLUE:
+			CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_LunaBlue);
+			break;
+
+		case ID_VIEW_APPLOOK_OFF_2007_BLACK:
+			CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
+			break;
+
+		case ID_VIEW_APPLOOK_OFF_2007_SILVER:
+			CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_Silver);
+			break;
+
+		case ID_VIEW_APPLOOK_OFF_2007_AQUA:
+			CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_Aqua);
+			break;
+		}
+
+		CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2007));
+		CDockingManager::SetDockingMode(DT_SMART);
+	}
+
+	RedrawWindow(NULL, NULL, RDW_ALLCHILDREN | RDW_INVALIDATE | RDW_UPDATENOW | RDW_FRAME | RDW_ERASE);
+	((CWinAppXP *)AfxGetApp())->WriteInt(_T("ApplicationLook"), ((CWinAppXP *)AfxGetApp())->m_nAppLook);
+}
+
+void CMDIFrameWndXP::OnUpdateApplicationLook(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetRadio(((CWinAppXP *)AfxGetApp())->m_nAppLook == pCmdUI->m_nID);
+}
+
+void CMDIFrameWndXP::OnWindowManager()
+{
+	ShowWindowsDialog();
+}
+
+int CMDIFrameWndXP::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CMDIFrameWndEx::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	OnApplicationLook( ((CWinAppXP *)AfxGetApp())->m_nAppLook);
+	
+	CMDITabInfo mdiTabParams;
+	mdiTabParams.m_style = CMFCTabCtrl::STYLE_3D_ONENOTE; // other styles available...
+	mdiTabParams.m_bActiveTabCloseButton = TRUE;      // set to FALSE to place close button at right of tab area
+	mdiTabParams.m_bTabIcons = FALSE;    // set to TRUE to enable document icons on MDI taba
+	mdiTabParams.m_bAutoColor = FALSE;    // set to FALSE to disable auto-coloring of MDI tabs
+	mdiTabParams.m_bDocumentMenu = TRUE; // enable the document menu at the right edge of the tab area
+	EnableMDITabbedGroups(TRUE, mdiTabParams);
+
+	m_wndRibbonBar.Create(this);
+	
+	InitializeRibbon();
+
+	if (!m_wndStatusBar.Create(this))
+	{
+		TRACE0("No se pudo crear la barra de estado\n");
+		return -1;      // No se pudo crear
+	}
+
+	CResourceDLL *dll=new CResourceDLL();
+	CMFCRibbonStatusBarPaneEx *texto= new CMFCRibbonStatusBarPaneEx(ID_STATUSBAR_TEXTO, "Listo", TRUE, &m_wndStatusBar);
+	
+	m_wndStatusBar.AddElement(texto, "Estado");
+	m_wndStatusBar.AddExtendedElement(new CMFCRibbonProgressBar(ID_STATUSBAR_BARRADEPROGRESO), "Progreso");
+	m_wndStatusBar.AddExtendedElement(new CMFCRibbonStatusBarPane(ID_STATUSBAR_TOTAL, "Sin resultados", TRUE) , "Total");
+	m_wndStatusBar.AddExtendedElement(new CMFCRibbonStatusBarPane(ID_STATUSBAR_ANIMACIONPROGRESO, "", IDB_BLOADING, 16, RGB(255,0,255)), "Progreso");
+	m_wndStatusBar.AddExtendedElement(new CMFCRibbonStatusBarPane(ID_STATUSBAR_USUARIO, "Usuario", TRUE), "Usuario");
+	// m_wndStatusBar.AddExtendedElement(new CMFCRibbonStatusBarPane(ID_STATUSBAR_SERVIDOR, "Servidor", TRUE), "Servidor");
+	delete dll;
+	
+	// enable Visual Studio 2005 style docking window behavior
+	CDockingManager::SetDockingMode(DT_SMART);
+	// enable Visual Studio 2005 style docking window auto-hide behavior
+	EnableAutoHidePanes(CBRS_ALIGN_ANY);
+
+	if (!m_pNavBar.Create("Navegador", this, CRect(0, 0, 200, 200), TRUE, 512, WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_RIGHT | CBRS_FLOAT_MULTI))
+	{
+		TRACE0("Failed to create navigate window\n");
+		return FALSE; // failed to create
+	}
+
+	m_pNavBar.EnableDocking(CBRS_ALIGN_ANY);
+	DockPane(&m_pNavBar);
+
+	// Navigation pane will be created at left, so temporary disable docking at the left side:
+	EnableDocking(CBRS_ALIGN_TOP | CBRS_ALIGN_BOTTOM | CBRS_ALIGN_RIGHT);
+
+	// Outlook bar is created and docking on the left side should be allowed.
+	EnableDocking(CBRS_ALIGN_LEFT);
+	EnableAutoHidePanes(CBRS_ALIGN_RIGHT);
+
+	// Enable enhanced windows management dialog
+	EnableWindowsDialog(ID_WINDOW_MANAGER, "Ventanas", TRUE);
+	return 0;
+}
+
+void CMDIFrameWndXP::InitializeRibbon() {
+
+	CResourceDLL dll;
+
+	// Add elements to the right side of tabs:
+	CMFCRibbonButton* pVisualStyleButton = new CMFCRibbonButton(-1, "Estilo", -1, -1);
+
+	pVisualStyleButton->SetMenu(IDR_THEME_MENU, FALSE /* No default command */, TRUE /* Right align */);
+	pVisualStyleButton->SetToolTipText("Modificar estilo visual");
+	pVisualStyleButton->SetDescription("Cambiar entre temas");
+	m_wndRibbonBar.AddToTabs(pVisualStyleButton);
+}
+
+BOOL CMDIFrameWndXP::LoadFrame(UINT nIDResource, DWORD dwDefaultStyle, CWnd* pParentWnd, CCreateContext* pContext) {
+
+	if(!AfxGetApp()->GetProfileInt("control","close", 1)) {
+
+		CMyRegKey keytemp(((CWinAppXP *)AfxGetApp())->GetRegSectionPath());
+		((CWinAppXP *)AfxGetApp())->SetRegistryBase("Workspace1");
+		CMyRegKey keytemp1(((CWinAppXP *)AfxGetApp())->GetRegSectionPath());
+		keytemp.DeleteRegKey("", "");
+		keytemp1.DeleteRegKey("", "");
+		AfxGetApp()->WriteProfileInt("barras", "store",0);
+		AfxGetApp()->WriteProfileString("control", "classname","");
+	}
+	((CWinAppXP *)AfxGetApp())->SetRegistryBase("Workspace1");
+	CMyRegKey key(((CWinAppXP *)AfxGetApp())->GetRegSectionPath());
+	CStringArray valores;
+	key.EnumRegKey("", valores);
+	for(int i=0; i<valores.GetCount(); i++) {
+
+		if(valores[i].Find("Pane")!=-1 || valores[i].Find("DockingManager")!=-1) 
+			key.DeleteRegKey(valores[i], "");
+	}
+	BOOL retorno= CMDIFrameWndEx::LoadFrame(nIDResource, dwDefaultStyle, pParentWnd, pContext);
+	if(m_pNavBar.IsAutoHideMode())	
+		m_pNavBar.UnSetAutoHideMode(NULL);
+	m_pNavBar.ShowPane(false,false,false);
+	((CWinAppXP *)AfxGetApp())->SetRegistryBase("Workspace");
+	return retorno;
+}
+
+BOOL CMDIFrameWndXP::OnShowMDITabContextMenu(CPoint point, DWORD dwAllowedItems, BOOL bDrop) {
+
+	CMenu menu;
+	CMenu submenu,submenu1;
+	menu.CreatePopupMenu();
+	submenu.CreatePopupMenu();
+
+	CMFCTabCtrl* pPrevActiveWnd = m_wndClientArea.FindActiveTabWnd() ? m_wndClientArea.FindActiveTabWnd() : &m_wndClientArea.GetMDITabs();
+	int i=pPrevActiveWnd->GetActiveTab();
+	int pos=0;
+
+	menu.InsertMenu(pos++, MF_BYPOSITION , ID_FILE_CLOSE, "Cerrar\tCtrl+F4");
+	if( pPrevActiveWnd->GetTabsNum()>1) {
+		menu.InsertMenu(pos++, MF_BYPOSITION | MF_STRING, ID_WINDOW_CLOSE_ALL, pPrevActiveWnd->GetTabsNum()==2 ? "C&errar Otra" : "C&errar Otras");
+	}
+	menu.InsertMenu(pos++, MF_BYPOSITION|MF_SEPARATOR);
+	if( pPrevActiveWnd->GetTabsNum()>1) {
+
+		menu.InsertMenu(pos++, MF_BYPOSITION|MF_SEPARATOR);
+		if( i!=pPrevActiveWnd->GetTabsNum()-1) {
+			menu.InsertMenu(pos, MF_BYPOSITION, ID_NEXT_PANEEX, "Siguiente\tAlt+Flecha Derecha");
+			pos++;
+		}
+		if( i!=0)
+			menu.InsertMenu(pos, MF_BYPOSITION, ID_PREV_PANEEX, "Anterior\tAlt+Flecha Izquierda");
+
+		for( int j=0; j<pPrevActiveWnd->GetTabsNum(); j++) {
+			if( i==j)
+				continue;
+			CWnd *child= pPrevActiveWnd->GetTabWnd(j);
+			CString temp= ((CMDIChildWndXP *)child)->GetActiveView()->GetDocument()->GetTitle();
+			submenu.AppendMenu(MF_STRING,j+VENTANAS_PREFIJO,temp);
+		}
+		menu.AppendMenu(MF_SEPARATOR);
+		menu.AppendMenu(MF_POPUP, (UINT) submenu.GetSafeHmenu(), "&Ventanas");
+	}
+
+	CMFCPopupMenu* pPopupMenu = new CMFCPopupMenu();
+	pPopupMenu->Create(AfxGetMainWnd(), point.x, point.y, menu, true, true);
+	// menu.TrackPopupMenu( TPM_RIGHTBUTTON, point.x, point.y, AfxGetMainWnd());
+	return TRUE;
+}
+
+BOOL CMDIFrameWndXP::OnEraseMDIClientBackground(CDC* pDC) {
+
+	static bool invalidate=true;
+	CRect rect;
+	m_wndClientArea.GetClientRect(rect);
+
+	if(m_sizeClient.cx!= rect.Width() || m_sizeClient.cy!=rect.Height()) {
+
+		m_sizeClient.cx= rect.Width();
+		m_sizeClient.cy= rect.Height();
+		BuildFlash();
+	}
+
+	CString sLogoString=CApplicacion::GetCompany() + "\r" + CApplicacion::GetLongName();
+	int nLineas= 1;
+	for( int i=0; i<sLogoString.GetLength(); i++) {
+		if(sLogoString[i]=='\r')
+			nLineas++;
+	}
+	CRect rDataBox= rect;
+
+	if(m_hBitmap) {
+		CDC dcMem;
+		VERIFY( dcMem.CreateCompatibleDC(pDC));
+
+		HBITMAP* pBmpOld = (HBITMAP*) ::SelectObject(dcMem.m_hDC, m_hBitmap);
+		pDC->SetStretchBltMode(COLORONCOLOR);
+
+		pDC->StretchBlt(rect.left, rect.top, rect.Width(), rect.Height(), 
+			&dcMem, 0, 0, m_bmInfo.bmWidth-1, m_bmInfo.bmHeight-1,
+			SRCCOPY);
+		::SelectObject(dcMem.m_hDC, pBmpOld);
+	} else {
+		CBrush NewBrush(GetSysColor(COLOR_DESKTOP));
+		pDC->SetBrushOrg(0,0) ;
+		CBrush* pOldBrush = (CBrush*)pDC->SelectObject(&NewBrush);   
+		pDC->PatBlt(rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top ,PATCOPY);
+		pDC->SelectObject(pOldBrush);
+	}
+
+	TEXTMETRIC tm;
+	pDC->GetTextMetrics(&tm);
+	CFont* oldFont = pDC->SelectObject(&m_LogoFont);
+	CSize sz = pDC->GetTextExtent(sLogoString, sLogoString.GetLength());
+	// GetTextExtent calculates the size of the displayed logo
+	// which depends on the device context....
+	// Calculate the box size by subtracting the text width and height from the
+	// window size.  Also subtract 20% of the average character size to keep the
+	// logo from printing into the borders...
+	rDataBox.left = rDataBox.right  - sz.cx - tm.tmAveCharWidth/2;
+	rDataBox.left-=10;
+	rDataBox.right-=10;
+	rDataBox.top  = rDataBox.bottom - nLineas*(sz.cy - tm.tmHeight/5);
+	rDataBox.top-=20;
+	rDataBox.bottom-=10;
+	pDC->SetBkMode(TRANSPARENT);
+	// shift logo box right, and print black...
+	COLORREF oldColor = pDC->SetTextColor(RGB(0,0,0));
+	pDC->DrawText(sLogoString, sLogoString.GetLength(), &rDataBox, DT_VCENTER | /*DT_SINGLELINE | */DT_RIGHT);
+	// shift logo box left and print white
+	rDataBox.left -= (nLineas+1)*tm.tmAveCharWidth/5;
+	pDC->SetTextColor(RGB(255,255,255));
+	pDC->DrawText(sLogoString, sLogoString.GetLength(), &rDataBox, DT_VCENTER | /*DT_SINGLELINE | */DT_RIGHT);
+	// Restore original location and print in the button face color
+	rDataBox.left += tm.tmAveCharWidth/5;
+	pDC->SetTextColor(GetSysColor(COLOR_BTNFACE));
+	pDC->DrawText(sLogoString, sLogoString.GetLength(), &rDataBox, DT_VCENTER | /*DT_SINGLELINE | */DT_RIGHT);
+	// restore the original properties and release resources...
+	pDC->SelectObject(oldFont);
+	pDC->SetTextColor(oldColor);
+
+	if(invalidate) {
+		invalidate=false;
+		Invalidate();
+	} else invalidate=true;
+	return TRUE;
+}
+
+
+void CMDIFrameWndXP::BuildFlash(bool load/*=false*/) {
+
+	CWaitCursor wait;
+	if(m_szArchivo.IsEmpty())
+		return;
+	int mancho=m_sizeClient.cx/2;
+	int malto= m_sizeClient.cy/2;
+
+	CRect rect(mancho-m_nAncho/2,
+		malto-m_nAlto/2,
+		m_nAncho, m_nAlto);
+	rect.right= rect.left+m_nAncho;
+	rect.bottom= rect.top+m_nAlto;
+
+	m_wndClientArea.ClientToScreen(rect);
+	ScreenToClient(rect);
+
+	if(!m_pFlash) {
+		m_pFlash=new CShockwaveflash1();
+		if(!m_pFlash->Create("", "", WS_CHILD | WS_VISIBLE, rect, this, 1050)) {
+			delete m_pFlash;
+			m_pFlash=NULL;
+			return;
+		}
+	} else {
+		m_pFlash->MoveWindow(rect);
+	}
+	if(m_dwBkColor!=-1) {
+		m_pFlash->put_BackgroundColor(RGB(
+			GetBValue(m_dwBkColor),
+			GetGValue(m_dwBkColor),
+			GetRValue(m_dwBkColor))
+			);
+	}
+	if(load)
+		m_pFlash->put_Movie(m_szArchivo);
+}
+
+void CMDIFrameWndXP::SetFlash(CString archivo, int ancho/*=0*/, int alto/*=0*/, DWORD bkColor) {
+
+	m_szArchivo= archivo;
+	m_nAlto= alto;
+	m_nAncho= ancho;
+	m_dwBkColor= bkColor;
+	BuildFlash(true);
 }

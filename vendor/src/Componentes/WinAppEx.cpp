@@ -4,26 +4,32 @@
 #include <atlbase.h>	// Required for the CRegKey
 # include "newmenu/mdiframewndxp.h"
  
-IMPLEMENT_DYNCREATE( CWinAppEx, CWinApp)
-CWinAppEx::CWinAppEx( LPCTSTR lpszAppName /*NULL*/ )
-		 : CWinApp( lpszAppName )
+IMPLEMENT_DYNCREATE( CWinAppXP, CWinAppEx)
+CWinAppXP::CWinAppXP( LPCTSTR lpszAppName /*NULL*/ )
+		 : CWinAppEx()
 		 , m_uMsgCheckInst( NULL )
-{	
+{
+	m_bHiColorIcons = TRUE;
 	m_mlparamold= NULL;
 }
 
-CWinAppEx::~CWinAppEx( void )
-{	
+CWinAppXP::~CWinAppXP( void )
+{
 	m_uMsgCheckInst = NULL;	
 }
 
-BEGIN_MESSAGE_MAP(CWinAppEx, CWinApp)
+BEGIN_MESSAGE_MAP(CWinAppXP, CWinAppEx)
 	ON_COMMAND(ID_FILE_PRINT_SETUP, OnFilePrintSetup)
 END_MESSAGE_MAP()
 
-// CWinAppEx message handlers
+// CWinAppXP message handlers
 
-BOOL CWinAppEx::PreTranslateMessage( LPMSG pMsg )
+void  CWinAppXP::SetSaveState(bool save/*=false*/) {
+
+	m_bSaveState=save;
+}
+
+BOOL CWinAppXP::PreTranslateMessage( LPMSG pMsg )
 {
 	if( pMsg->message == m_uMsgCheckInst )
 		return OnAnotherInstanceMessage( pMsg );	
@@ -36,12 +42,12 @@ BOOL CWinAppEx::PreTranslateMessage( LPMSG pMsg )
 			((CMDIFrameWndXP *) m_pMainWnd)->m_nInactivo=0;
 		m_mlparamold= pMsg->lParam;
 	}	
-	return CWinApp::PreTranslateMessage( pMsg );	
+	return CWinAppEx::PreTranslateMessage( pMsg );	
 }
 
-// CWinAppEx functions
+// CWinAppXP functions
 
-BOOL CWinAppEx::InitInstance( LPCTSTR lpszUID /*NULL*/ )
+BOOL CWinAppXP::InitInstance( LPCTSTR lpszUID /*NULL*/ )
 {
 #if defined(ENABLE_LICENSE_CHECK) && !defined(_DEBUG)
 	char ruta[MAX_PATH];
@@ -83,10 +89,10 @@ BOOL CWinAppEx::InitInstance( LPCTSTR lpszUID /*NULL*/ )
 	}
 	if(commandline.Find("-close")!=-1)
 		return false;
-	return CWinApp::InitInstance();
+	return CWinAppEx::InitInstance();
 }
 
-BOOL CWinAppEx::FindAnotherInstance( LPCTSTR lpszUID )
+BOOL CWinAppXP::FindAnotherInstance( LPCTSTR lpszUID )
 {
 	ASSERT( lpszUID != NULL );
 		
@@ -110,7 +116,7 @@ BOOL CWinAppEx::FindAnotherInstance( LPCTSTR lpszUID )
 	return FALSE;
 }
 
-BOOL CWinAppEx::PostInstanceMessage( WPARAM wParam, LPARAM lParam )
+BOOL CWinAppXP::PostInstanceMessage( WPARAM wParam, LPARAM lParam )
 {
 	ASSERT( m_uMsgCheckInst != NULL );
 
@@ -132,12 +138,12 @@ BOOL CWinAppEx::PostInstanceMessage( WPARAM wParam, LPARAM lParam )
 	return (BOOL)( lRet != -1 );
 }
 
-void CWinAppEx::OnCommandLine(CString szCommandLine) {
+void CWinAppXP::OnCommandLine(CString szCommandLine) {
 	CWaitCursor wait;
 	OpenDocumentFile( m_lpCmdLine );
 }
 
-void CWinAppEx::OnShowApp() {
+void CWinAppXP::OnShowApp() {
 
 	// Does the main window have any popups ? If has,
 	// bring the main window or its popup to the top
@@ -160,7 +166,7 @@ void CWinAppEx::OnShowApp() {
 	pPopupWnd->SetForegroundWindow(); 
 }
 
-BOOL CWinAppEx::OnAnotherInstanceMessage( LPMSG pMsg )
+BOOL CWinAppXP::OnAnotherInstanceMessage( LPMSG pMsg )
 {
 	// Get command line arguments (if any) from new instance.
 	
@@ -189,7 +195,7 @@ BOOL CWinAppEx::OnAnotherInstanceMessage( LPMSG pMsg )
 	return TRUE;
 }
 
-BOOL CWinAppEx::EnableTokenPrivilege( LPCTSTR lpszSystemName, 
+BOOL CWinAppXP::EnableTokenPrivilege( LPCTSTR lpszSystemName, 
 									  BOOL    bEnable /*TRUE*/ )
 {
 	ASSERT( lpszSystemName != NULL );
@@ -224,13 +230,13 @@ BOOL CWinAppEx::EnableTokenPrivilege( LPCTSTR lpszSystemName,
 	return bRetVal;
 }
 
-void CWinAppEx::RegisterShellFileTypesEx( BOOL bCompat   /*FALSE*/, 
+void CWinAppXP::RegisterShellFileTypesEx( BOOL bCompat   /*FALSE*/, 
 										  BOOL bRegister /*TRUE*/ )
 {
 	// Register all application document types:
 
 	if( bRegister == TRUE )
-		CWinApp::RegisterShellFileTypes( bCompat );
+		CWinAppEx::RegisterShellFileTypes( bCompat );
 		
 	// Now register SDI document dde open.
 	// Loop through the document templates:
@@ -298,11 +304,11 @@ void CWinAppEx::RegisterShellFileTypesEx( BOOL bCompat   /*FALSE*/,
 	// Unregister all application document types:
 
 	if( bRegister == FALSE )
-		CWinApp::UnregisterShellFileTypes();
+		CWinAppEx::UnregisterShellFileTypes();
 }
 
 //
-void CWinAppEx::OnFilePrintSetup() {
+void CWinAppXP::OnFilePrintSetup() {
 
 	PRINTDLG pd;
 	pd.lStructSize=(DWORD)sizeof(PRINTDLG);
@@ -332,6 +338,6 @@ void CWinAppEx::OnFilePrintSetup() {
 			WriteProfileInt("printer", "papel",pDevMode->dmPaperSize);
 			::GlobalUnlock(m_hDevMode);
 		}
-	} else CWinApp::OnFilePrintSetup();
+	} else CWinAppEx::OnFilePrintSetup();
 }
 

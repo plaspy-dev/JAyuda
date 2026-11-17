@@ -31,7 +31,14 @@ public:
 	CButtonXP	m_BOK;
 	CButtonXP	m_BCancelar;
 	CSectionSeparator m_SPrimero;
-	CSeparator m_SSegundo;
+	CSectionSeparator m_SSegundo;
+	CSeparator m_SFinProxy;
+	CComboBoxXP	m_CBTipo;
+	CEditXP		m_EServidor;
+	CEditXP		m_EPuertoProxy;
+	CEditXP		m_EUsuario;
+	CEditXP		m_EContrasena;
+	CEditXP		m_EKeepAlive;
 
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnNMRclickListdb(NMHDR *pNMHDR, LRESULT *pResult);
@@ -48,4 +55,6 @@ public:
 	CButtonXP m_BExaminar;
 public:
 	afx_msg void OnBnClickedBexaminar();
+	afx_msg void OnCbnSelChangeCProxy();
+	CEditXP m_ELecturaTimeout;
 };

@@ -96,6 +96,7 @@ DWORD GetProgressDlg(CStringArray *querys, CStringArray *mensajes, const CString
 	dlg.m_pQuerys= querys;
 	dlg.m_pMensajes= mensajes;
 	dlg.m_szTitulo= titulo;
+	dlg.m_bSilent= silent;
 	DWORD resultado= dlg.DoModal();
 	if(conector && silent) 
 		conector->SetMainFrame(main);
@@ -162,7 +163,7 @@ CString	MarcasToNumerosEx( CStringArray &nombres, CUIntArray  &id, CString valor
 		nuevos.Add( valor);
 	valor.Empty();
 	for( int i=0; i< nuevos.GetCount(); i++) {
-							
+
 		if(i) 
 			valor+=",";
 		temp1= nuevos.GetAt(i);
@@ -221,12 +222,14 @@ bool Exportar(CMyListCtrl *pLista,CString Titulo, bool showfile) {
 
 			CWaitCursor wait;
 
+			pExport.SetRows(pLista->GetItemCount());
+
 			CStringArray result;
 			if(!pExport.CustomExportLocal( dlg.GetPathName(), Titulo)) {
 				AfxMessageBox("No se puede obtener acceso a \"" + dlg.GetPathName() + "\".\nCompruebe que el archivo no este siendo utilizado por otro proceso.", MB_OK | MB_ICONERROR);
 				return false;
 			}
-			CHeaderCtrl *header= pLista->GetHeaderCtrl();
+			CMFCHeaderCtrl *header= &pLista->GetHeaderCtrl();
 			ASSERT(header);
 			int len= header->GetItemCount();
 
@@ -273,6 +276,8 @@ bool Exportar(CTreeListCtrl *pTree,CString Titulo, bool showfile) {
 	if( dlg.DoModal()==IDOK) {
 
 			CWaitCursor wait;
+
+			pExport.SetRows(pTree->GetItemCount());
 
 			CStringArray result;
 			if(!pExport.CustomExportLocal( dlg.GetPathName(), Titulo)) {
@@ -326,3 +331,93 @@ bool Exportar(CTreeListCtrl *pTree,CString Titulo, bool showfile) {
 	return false;
 }
 
+CPtrArray *SortComponentes(CFormView *view, int &horizontales) {
+
+	CPtrArray *pHorizontales= new CPtrArray();
+	CWnd *item= view->GetWindow(GW_CHILD);
+	CRect rect;
+	horizontales=0;
+
+	// organizamos los elementos
+	while(item) {
+
+		item->GetWindowRect(rect);
+		TCHAR clase[MAX_PATH];
+		if(GetClassName(*item, clase, MAX_PATH)) {
+			CString szClase= clase;
+			if(szClase=="Button") { // es un group box o boton
+				if((item->GetStyle()&BS_AUTOCHECKBOX)==BS_AUTOCHECKBOX) { // es un checkbox o groupbox
+					if(item->GetStyle()&BS_RADIOBUTTON) { // es un group box
+						item= item->GetWindow(GW_HWNDNEXT);
+						continue;
+					}
+				} else {
+					item= item->GetWindow(GW_HWNDNEXT);
+					continue;
+				}
+			}
+		}
+		if(item->IsKindOf(RUNTIME_CLASS(CStaticSeparator))) {
+			item= item->GetWindow(GW_HWNDNEXT);
+			continue;
+		}
+		CPtrArray *ptr=NULL;
+		for(int i=0; i<pHorizontales->GetCount(); i++) {
+			CPtrArray *temp=(CPtrArray *)pHorizontales->GetAt(i);
+			if(temp) {
+				for(int j=0; j<temp->GetCount(); j++) {
+					CRect rect1;
+					CWnd *itemrect= (CWnd *)temp->GetAt(j);
+					itemrect->GetWindowRect(rect1);
+					if(rect1.top<rect.CenterPoint().y && rect1.bottom>rect.CenterPoint().y) { // esta en el punto
+
+						ptr= temp;
+						break;
+					}
+				}
+			}
+			if(ptr)
+				break;
+		}
+		if(!ptr) {
+			ptr= new CPtrArray();
+			pHorizontales->Add(ptr);
+		}
+		ASSERT(ptr);
+		int col=-1;
+		for(int i=0; i<ptr->GetCount(); i++) {
+			CRect rect1;
+			CWnd *itemrect= (CWnd *)ptr->GetAt(i);
+			itemrect->GetWindowRect(rect1);
+			if(rect.CenterPoint().x<rect1.CenterPoint().x) { // es menor
+				col= i;
+				ptr->InsertAt(i, item);
+				break;
+			}
+		}
+		if(col==-1)
+			ptr->Add(item);
+		if(horizontales<ptr->GetCount()) 
+			horizontales= ptr->GetCount();
+		item= item->GetWindow(GW_HWNDNEXT);
+	}
+	return pHorizontales;
+}
+
+CString GetCommonPath(const CString &ruta) {
+#ifndef _DEBUG
+	TCHAR szPath[MAX_PATH];
+	if(SUCCEEDED(SHGetFolderPath(NULL, 
+								 CSIDL_COMMON_APPDATA, 
+								 NULL, 
+								 0, 
+								 szPath))) 
+	{
+		PathAppend(szPath, "SDG");
+		PathAppend(szPath, CApplicacion::GetAppName());
+		PathAppend(szPath, ruta);
+		return szPath;
+	}
+#endif
+	return CApplicacion::GetAppPath(ruta);
+}

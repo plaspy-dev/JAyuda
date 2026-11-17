@@ -160,8 +160,8 @@ BOOL CDlgElementos::OnInitDialog()
 	}
 	m_EElementos.SetWindowText(m_szFinal);
 	SetWindowText(m_szTitulo);
-	m_LCElementos.AutoSizeColumns();
 	m_LCElementos.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES);
+	m_LCElementos.AutoSizeColumns();
 	CheckAll(m_szFinal);
 	return TRUE;
 }
@@ -228,7 +228,7 @@ void CDlgElementos::OnNMRclickListelemento(NMHDR *pNMHDR, LRESULT *pResult)
 	if( pNMListView->iItem == -1 || pNMListView->iSubItem == -1) 
 
 		return;
-	CNewMenu menu;
+	CMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_STRING, 1001, "&Agregar");
 	menu.AppendMenu(MF_STRING, 1002, "&Eliminar");

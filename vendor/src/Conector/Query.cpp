@@ -115,10 +115,12 @@ CString CQuery::GetValor(const CString &valor) {
 		return "NULL";
 	if(valor.CompareNoCase("SYSDATE()")==0)
 		return valor;
+	if(valor.CompareNoCase("NOW()")==0)
+		return valor;
 	CString otro= valor;
 	otro.Replace("\\", "\\\\");
-	otro.Replace("\"", "\\\"");
-	return "\"" + otro +"\"";
+	otro.Replace("\'", "\\\'");
+	return "\'" + otro +"\'";
 }
 
 void CQuery::SetBinario(const CString &campo, const CByteArray &arreglo) {
@@ -158,8 +160,8 @@ CString CQuery::GetUpdate(const CString condicion) {
 				case '\\':
 					binario+="\\\\";
 					break;
-				case '\"':
-					binario+="\\\"";
+				case '\'':
+					binario+="\\\'";
 					break;
 				default:
 					binario+= m_baBinario[i];
@@ -207,8 +209,8 @@ CString CQuery::GetInsert() {
 				case '\\':
 					binario+="\\\\";
 					break;
-				case '\"':
-					binario+="\\\"";
+				case '\'':
+					binario+="\\\'";
 					break;
 				default:
 					binario+= m_baBinario[i];
@@ -230,13 +232,15 @@ CString	CQuery::GetSelect(const CString condicion/*=""*/, const CString join/*="
 
 	CString query="SELECT ";
 	CString valor;
+	CString separadoras= AfxGetApp()->GetProfileString("conector","separadori", "'");
+	CString separadorasf= AfxGetApp()->GetProfileString("conector","separadorf", "'");
 
 	for( int i=0; i<m_saCampos.GetCount(); i++) {
 		if(i)
 			query+=",";
 		if(m_saValores[i]==m_saCampos[i])
 			query+=m_saValores[i];
-		else query+=m_saValores[i] + " AS '" + m_saCampos[i] + "'";
+		else query+=m_saValores[i] + " AS " + separadoras + m_saCampos[i] + separadorasf;
 	}
 
 	query+=" FROM " + m_szTabla + " ";
@@ -264,7 +268,7 @@ CString CQuery::CreateUpdate(CString tabla, CStringArray &Campos, CStringArray &
 			query+=",";
 		valor= Valores.GetAt(i);
 		valor.Replace("\\", "\\\\");
-		valor.Replace("\"", "\\\"");
+		valor.Replace("\'", "\\\'");
 		query+= Campos.GetAt(i)+"=";
 		query+= valor.IsEmpty() ? "NULL" : !valor.CompareNoCase("SYSDATE()") ? valor : "\"" + valor + "\"";
 	}
@@ -285,7 +289,7 @@ CString CQuery::CreateInsert(CString tabla, CStringArray &valores, CString condi
 			query+=",";
 		valor= valores.GetAt(i);
 		valor.Replace("\\", "\\\\");
-		valor.Replace("\"", "\\\"");
+		valor.Replace("\'", "\\\'");
 		query+= valor.IsEmpty() ? "NULL" : !valor.CompareNoCase("SYSDATE()") ? valor : "\"" + valor + "\"";
 	}
 	query+=" " + condicionselect + ";";
@@ -311,7 +315,7 @@ CString CQuery::CreateInsert(CString tabla, CStringArray &campos,CStringArray &v
 			query+=",";
 		valor= valores.GetAt(i);
 		valor.Replace("\\", "\\\\");
-		valor.Replace("\"", "\\\"");
+		valor.Replace("\'", "\\\'");
 		query+= valor.IsEmpty() ? "NULL" : !valor.CompareNoCase("SYSDATE()") ? valor : "\"" + valor + "\"";
 	}
 	query+=");";
@@ -331,7 +335,7 @@ CString CQuery::CreateInsert(CString tabla, CStringArray &Valores) {
 			query+=",";
 		valor= Valores.GetAt(i);
 		valor.Replace("\\", "\\\\");
-		valor.Replace("\"", "\\\"");
+		valor.Replace("\'", "\\\'");
 		query+= valor.IsEmpty() ? "NULL" : !valor.CompareNoCase("SYSDATE()") ? valor : "\"" + valor + "\"";
 	}
 	query+=");";

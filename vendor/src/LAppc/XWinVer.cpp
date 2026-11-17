@@ -124,8 +124,6 @@ DWORD CXWinVersion::m_dwVistaProductType = 0;
 // Init
 void CXWinVersion::Init()
 {
-	TRACE(_T("in CXWinVersion::Init\n"));
-
 	m_dwVistaProductType = 0;
 
 	ZeroMemory(&m_osinfo, sizeof(m_osinfo));

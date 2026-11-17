@@ -106,7 +106,7 @@ BOOL CLicenceDlg::OnInitDialog()
 	m_STitulo.SetWindowText(temp);
 
 	m_SLicencia.SetURL(CApplicacion::GetURL());
-	m_SLicencia.SetUnderline();
+	m_SLicencia.SizeToContent();
 
 	return TRUE;
 }

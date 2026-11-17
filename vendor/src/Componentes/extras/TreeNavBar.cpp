@@ -13,12 +13,13 @@ CTreeNavBar::~CTreeNavBar()
 {
 }
 
-BEGIN_MESSAGE_MAP(CTreeNavBar, CGuiControlBar)
+BEGIN_MESSAGE_MAP(CTreeNavBar, CDockablePane)
 	ON_WM_CREATE()
 	ON_NOTIFY(TVN_SELCHANGED, 201, OnChangeSelArborReal)
 	ON_NOTIFY(NM_DBLCLK, 201, OnChangeSelArbol)
 	ON_NOTIFY(NM_RCLICK, 201, OnRClick)
 	ON_COMMAND(201,OpenDocument)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -100,7 +101,7 @@ void CTreeNavBar::SetSel( UINT id) {
 
 int CTreeNavBar::OnCreate(LPCREATESTRUCT lpCreateStruct) 
 {
-	if (CGuiControlBar::OnCreate(lpCreateStruct) == -1)
+	if (CDockablePane::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	CRect rect;
 	DWORD stilo= WS_VISIBLE | WS_BORDER | WS_CHILD | TVS_HASBUTTONS|TVS_LINESATROOT|TVS_HASLINES|TVS_SHOWSELALWAYS;
@@ -144,7 +145,7 @@ void CTreeNavBar::OnRClick(NMHDR* pNMHDR, LRESULT* pResult) {
 
 	if( item && m_Tree.GetItemData(item) && (TVHT_ONITEM & uFlags)) {
 		m_Tree.SelectItem(item);
-		CNewMenu menu;
+		CMenu menu;
 		menu.CreatePopupMenu();
 		menu.AppendMenu(MF_STRING, 201, "&Abrir");
 		menu.TrackPopupMenu(TPM_LEFTALIGN|TPM_RIGHTBUTTON, gpoint.x, gpoint.y, this);
@@ -158,6 +159,14 @@ BOOL CTreeNavBar::PreTranslateMessage(MSG* pMsg)
 		if( GetFocus()== &m_Tree) 
 			OpenDocument();
 	}
-	return CGuiControlBar::PreTranslateMessage(pMsg);
+	return CDockablePane::PreTranslateMessage(pMsg);
 }
 
+
+void CTreeNavBar::OnSize(UINT nType, int cx, int cy)
+{
+	CDockablePane::OnSize(nType, cx, cy);
+	if(::IsWindow(m_Tree)) {
+		m_Tree.MoveWindow(0,0,cx, cy);
+	}
+}

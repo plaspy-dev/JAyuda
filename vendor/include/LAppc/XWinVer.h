@@ -111,14 +111,9 @@ class __LAPPC_EXPORT__ CXWinVersion
 public:
 	CXWinVersion()
 	{
-		TRACE(_T("in CXWinVersion\n"));
 		if (!m_bInitialized)
 		{
 			Init();
-		}
-		else
-		{
-			TRACE(_T("already initialized\n"));
 		}
 	}
 

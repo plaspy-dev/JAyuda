@@ -2,7 +2,7 @@
 #include "listctrlsize.h"
 # include "Componentes.h"
 
-# define TIMER_UPDATE 15
+# define TIMER_UPDATE	15
 
 CListCtrlSize::CListCtrlSize(void)
 {
@@ -10,13 +10,14 @@ CListCtrlSize::CListCtrlSize(void)
 	m_sizeMin= CSize(0,0);
 	m_sizeDelta= CSize(0,0);
 	m_pFin= m_pLabel= NULL;
+	m_nHeigth=0;
 }
 
 CListCtrlSize::~CListCtrlSize(void)
 {
 }
 
-BEGIN_MESSAGE_MAP(CListCtrlSize, CMyListCtrl)
+BEGIN_MESSAGE_MAP(CListCtrlSize, CListCtrlXP)
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
@@ -50,6 +51,23 @@ void CListCtrlSize::Init() {
 	SetMaxSize(CSize(-1,-1));
 }
 
+void CListCtrlSize::AutoSizeColumns(int delta)
+{
+	CWaitCursor wait;
+	for (int i=0; i < m_wndHeader.GetItemCount(); i++) {
+		SetColumnWidth(i, delta==1 ? LVSCW_AUTOSIZE : LVSCW_AUTOSIZE_USEHEADER);
+		int maximo=m_pTamanos[(void *)i];
+		if(maximo && GetColumnWidth(i)>maximo) {
+			SetColumnWidth(i, maximo); // corregimos el ancho, queda faltando que corrija el alto
+		}
+	}
+}
+
+void CListCtrlSize::SetMaxColumnWidth(int col, int maximo/*=120*/) {
+
+	m_pTamanos.SetAt((void *)col, maximo);
+}
+
 void CListCtrlSize::RealUpdateSize() {
 	
 	CRect rect,rectthis;
@@ -58,15 +76,17 @@ void CListCtrlSize::RealUpdateSize() {
 	m_sizeDelta.cy= rectthis.bottom;
 	m_sizeDelta.cx= rectthis.right;
 
+	SetRedraw(false);
 	GetParent()->SetRedraw(false);
 	MoveWindow(rectthis.left, rectthis.top,m_sizeMin.cx, m_sizeMin.cy);
 	AutoSizeColumns();
 
 	if( GetItemCount()) {
 		GetItemRect(0, &rect, LVIR_BOUNDS);
-		int count= GetItemCount()+2;
+		int count= GetItemCount()+1;
 
-		count*= rect.Height();
+		count*= rect.Height()+1;
+		count+=10;
 		if(m_sizeMax.cy!=-1 && count>m_sizeMax.cy) 
 			count= m_sizeMax.cy;
 		if( count< m_sizeMin.cy)
@@ -87,23 +107,23 @@ void CListCtrlSize::RealUpdateSize() {
 	m_sizeDelta.cx-= rectthis.right;
 
 	MoveWindow(rectthis);
+	SetRedraw(true);
 	GetParent()->SetRedraw(true);
 	UpdateCtrlItems();
-	GetParent()->RedrawWindow();
+	GetParent()->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE  | RDW_ALLCHILDREN);
+
 	for(int i=0; i<m_pArrayControles.GetCount(); i++) {
 		CWnd *control= (CWnd *) m_pArrayControles[i];
 		if( control && ::IsWindow(*control) && control->IsWindowVisible()) {
 			int row, col;
 			GetCurrentPos(col, row);
-			if(col!=i)
-				continue;
-			ASSERT(col==i);
 			CRect rect;
 			EnsureVisible(row,true);
 			GetSubItemRect(row,col,LVIR_LABEL,rect);
 			control->MoveWindow( rect.left, rect.top, rect.Width(), rect.Height());
 		}
 	}
+	GetParent()->RedrawWindow();
 }
 
 void CListCtrlSize::UpdateSize() {
@@ -171,56 +191,115 @@ void CListCtrlSize::UpdateCtrlItems() {
 
 void CListCtrlSize::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
-	CMyListCtrl::DrawItem(lpDrawItemStruct);
+	CListCtrlXP::DrawItem(lpDrawItemStruct);
 }
 
 BOOL CListCtrlSize::PreTranslateMessage(MSG* pMsg)
 {
 	if( pMsg->message==WM_MOUSEWHEEL) {
+		
+		/*SCROLLINFO si;
+		ZeroMemory(&si,sizeof(SCROLLINFO));
+		si.cbSize = sizeof(SCROLLINFO);
+		si.fMask = SIF_ALL;
+		GetScrollInfo(SB_HORZ, &si);*/
+		// if(si.nMax>0) {
 		GetParent()->SendMessage(pMsg->message, pMsg->wParam, pMsg->lParam);
+		// return TRUE;
+		// }
 	}
-	return CMyListCtrl::PreTranslateMessage(pMsg);
+	return CListCtrlXP::PreTranslateMessage(pMsg);
 }
 
 
 BOOL CListCtrlSize::DeleteItem(int nItem) {
 	
-	BOOL retorno= CMyListCtrl::DeleteItem(nItem);
+	CWaitCursor wait;
+	BOOL retorno= CListCtrlXP::DeleteItem(nItem);
+	if(!m_pTamanos.IsEmpty()) { // calculamos el tamaño optimo de la lista
+		
+		if(GetItemCount()) {
+			m_nHeigth=0;
+			for(int i=0; i<GetItemCount(); i++) {
+				for(int j=0; j<GetColumnCount(); j++) {
+					UpdateHeight(GetItemText(i, j), j);
+				}
+			}
+		} else {
+			UpdateHeight();
+		}
+	}
 	UpdateSize();
 	return retorno;
 }
 
 BOOL CListCtrlSize::DeleteAllItems() {
 
-	BOOL retorno= CMyListCtrl::DeleteAllItems();
+	BOOL retorno= CListCtrlXP::DeleteAllItems();
+	UpdateHeight();
 	UpdateSize();
 	return retorno;
 }
 
 BOOL CListCtrlSize::SetItemText(int nItem,int nSubItem,LPCTSTR lpszText) {
 
-	BOOL retorno= CMyListCtrl::SetItemText(nItem,nSubItem,lpszText);
+	BOOL retorno= CListCtrlXP::SetItemText(nItem,nSubItem,lpszText);
+	UpdateHeight(lpszText, nSubItem);
 	UpdateSize();
 	return retorno;
 }
 
 int CListCtrlSize::InsertItem(int nItem,LPCTSTR lpszItem) {
 
-	int retorno= CMyListCtrl::InsertItem(nItem,lpszItem);
+	int retorno= CListCtrlXP::InsertItem(nItem,lpszItem);
+	UpdateHeight(lpszItem, 0);
 	UpdateSize();
 	return retorno;
 }
 
 int CListCtrlSize::InsertItem(int nItem,LPCTSTR lpszItem,int nImage) {
 
-	int retorno= CMyListCtrl::InsertItem(nItem,lpszItem,nImage);
+	int retorno= CListCtrlXP::InsertItem(nItem,lpszItem,nImage);
+	UpdateHeight(lpszItem, 0);
 	UpdateSize();
 	return retorno;
 }
 
+void CListCtrlSize::UpdateHeight(LPCTSTR lpszText, int col) {
+
+	if(col==-1) { // reseteamos el valor inicial
+		m_nHeigth=20;
+		CImageList imageList;
+		imageList.Create(1,m_nHeigth,ILC_COLOR4,1,1);
+		SetImageList(&imageList, LVSIL_SMALL);
+		return; 
+	}
+	int tamano=m_pTamanos[(void *)col];
+	if(tamano) {
+		CDC* pDC = GetDC();
+
+		CRect rect(0,0,0,0);
+		rect.left=0;
+		rect.right=tamano;
+
+		CFont *fuente= pDC->SelectObject(GetFont());
+		pDC->DrawText(lpszText, -1, rect, DT_WORDBREAK | DT_END_ELLIPSIS | DT_NOPREFIX | DT_NOCLIP | DT_VCENTER | DT_CALCRECT);
+		pDC->SelectObject(fuente);
+
+		if(m_nHeigth<rect.Height()) {
+
+			m_nHeigth=rect.Height();
+			CImageList imageList;
+			imageList.Create(1,rect.Height()>20 ? rect.Height() : 20,ILC_COLOR4,1,1);
+			SetImageList(&imageList, LVSIL_SMALL);
+		}
+	}
+}
+
 int	CListCtrlSize::AddItem(LPCTSTR lpszItem) {
 
-	int retorno= CMyListCtrl::AddItem(lpszItem);
+	int retorno= CListCtrlXP::AddItem(lpszItem);
+	UpdateHeight(lpszItem, 0);
 	UpdateSize();
 	return retorno;
 }
@@ -230,7 +309,7 @@ void CListCtrlSize::OnTimer(UINT_PTR nIDEvent)
 	if(nIDEvent==TIMER_UPDATE) {
 		KillTimer(TIMER_UPDATE);
 		RealUpdateSize();
-	}
+	} 
 	CListCtrlXP::OnTimer(nIDEvent);
 }
 
@@ -238,4 +317,12 @@ void CListCtrlSize::OnDestroy()
 {
 	KillTimer(TIMER_UPDATE);
 	CListCtrlXP::OnDestroy();
+}
+
+int	CListCtrlSize::AddColumn(CString texto, int tipo/*=CListCtrlXP::tipocol_texto*/, int maximocolumna/*=0*/) {
+
+	int pos= CListCtrlXP::AddColumn(texto, tipo);
+	if(maximocolumna)
+		SetMaxColumnWidth(pos, maximocolumna);
+	return pos;
 }

@@ -12,6 +12,7 @@
 #endif
 
 // dependencias
+#include <afxcontrolbars.h>     // MFC support for ribbons and control bars
 # include <definiciones.h>
 # include <lappc/lappc.h>
 
@@ -22,15 +23,7 @@
 
 // solo para el mainframe
 # define	ACELERADORES_PREFIJO		32000
-# define	MESSAGE_DELAY				3000
-
 # define	ID_VER_NAVEGADOR			136
-
-// temporizadores
-# define	TIMER_RESTORE_STATUS_BAR	123
-# define	JUPDATER_TIMER				50041
-# define	JUPDATER_INTERVALO		60*1000*60
-# define	JUPDATER_INTERVALO_INICIAL	1000*60
 
 // iniciamos la importacion de todas las librerias
 
@@ -40,38 +33,28 @@
 # include "COLORLISTBOX.H"
 # include "ComboBoxXP.h"
 # include "Draw.h"
-# include "EditAyuda.h"
 # include "EditFloat.h"
 # include "EditTiempo.h"
 # include "EditXP.h"
 # include "FadeWnd.h"
-# include "GuiControlBar.h"
-# include "GuiDockToolBarEx.h"
-# include "HyperLink.h"
-# include "INFOBARCTRL.H"
 # include "ListCtrlSize.h"
 # include "MasEdit.h"
 # include "MsgBoxHook.h"
 # include "MyListCtrl.h"
 # include "nbMessageBox.h"
 # include "newmenu\DialogXP.h"
-# include "newmenu\MDIChildWndXP.h"
 # include "newmenu\MDIFrameWndXP.h"
 # include "newmenu\MultiDocTemplateXP.h"
-# include "newmenu\NewMenu.h"
 # include "SEPARADOR\CHECKBOXSEPARATOR.H"
 # include "SEPARADOR\SECTIONSEPARATOR.H"
 # include "SEPARADOR\SEPARATOR.H"
 # include "SEPARADOR\STATICSEPARATOR.H"
 # include "SEPARADOR\VISUALSTYLESXP.H"
-# include "SortHeaderCtrl.h"
 # include "SplashScreenEx.h"
 # include "SplitterControl.h"
-# include "StatusBarXP.h"
 # include "TabCtrlSSL.h"
 # include "TabPageSSL.h"
 # include "TextProgressCtrl.h"
-# include "ToolbarXP.h"
 # include "Tools.h"
 # include "TreeCtrlXP.h"
 # include "treelistctrl\ThreadTreeStat.h"
@@ -83,15 +66,9 @@
 # include "xmlwriter.h"
 # include "XTabCtrl.h"
 # include "akTrayIcon.h"
-#include "logomdi.h"
 #include "BitmapPicture.h"
-#include "mditabs/MDITabs.h"
-#include "mditabs/LBSpinButtonCtrl.h"
-#include "XStatusBar.h"
 #include "extras/TreeNavBar.h"
-# include "extras/MiscelaneosEx.h"
 # include "ComponentesDoc.h"
-# include "MemDC.h"
 # include "MatrixStatic.h"
 # include "VListCtrl.h"
 # include "shockwaveflash1.h"
@@ -104,11 +81,21 @@
 # include "resizablegrip.h"
 # include "resizableformview.h"
 # include "resizabledialog.h"
+# include "XSleep.h"
 
 // CComponentesApp
 // See Componentes.cpp for the implementation of this class
 //
 
+
+// clases no mas usuadas, son obsoletas
+typedef CMDIChildWndEx	CMDIChildWndXP;
+typedef CEditXP			CEditAyuda;
+typedef	CDockablePane	CGuiControlBar;
+typedef CListCtrlXP		CMyListCtrl;
+typedef CMenu			CNewMenu;
+typedef CMFCCaptionBar	CInfobarCtrl;
+typedef CMFCLinkCtrl	CHyperLink;
 
 // tipo de documentos a importar
 typedef CMultiDocTemplateXP *( * LPDLLFUNC)(CString *, DWORD, CString *);

@@ -179,7 +179,7 @@ BOOL CDlgIngreso3::OnInitDialog()
 	m_EUsuario.EnableWindow(!m_bExiste);
 	VERIFY(m_pConector.Cargar(m_bLocalMachine ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER));
 	ASSERT(m_pConector.GetDatabasesCount());
-	m_pConector.SetMainFrame(this);
+	m_pConector.SetMainFrame(NULL);
 	m_EUsuario.SetWindowText(CMyRegKey::GetProfileString("", "LastUser", ""));
 
 	if(CMyRegKey::GetProfileInt("", "autolog")==0) {

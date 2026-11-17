@@ -15,41 +15,19 @@ class  __COMPONENTES_EXPORT__ CButtonXP : public CButton
 {
 // Construction
 public:
-	//***********************************************************************
-	// Name:		CButtonXP
-	// Description:	Default constructor.
-	// Parameters:	None.
-	// Return:		None.	
-	// Notes:		None.
-	//***********************************************************************
-    CButtonXP();
-	//***********************************************************************
-	// Name:		CButtonXP
-	// Description:	Destructor.
-	// Parameters:	None.
-	// Return:		None.	
-	// Notes:		virtual.
-	//***********************************************************************
+	CButtonXP();
 	virtual ~CButtonXP();
 
 // Attributes
 public:
 	bool	m_bValidate;
-
-protected:
-    CMouseMgr		m_MouseMgr;
-	CXWinVersion	m_WVersion;
-
 // Operations
 public:
-    virtual void PreSubclassWindow();
-    virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	afx_msg void OnSetFocus(CWnd* pOldWnd);
+    afx_msg void OnSetFocus(CWnd* pOldWnd);
+	DECLARE_MESSAGE_MAP()
+	CString	GetText();
 
-protected:
-    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-    afx_msg void OnMouseOut();
-
-DECLARE_MESSAGE_MAP()
+// propiedades
+	__declspec(property(get=GetText,put=SetWindowText))		CString	Text;
+	__declspec(property(get=IsWindowEnabled,put=EnableWindow)) bool Enable;
 };

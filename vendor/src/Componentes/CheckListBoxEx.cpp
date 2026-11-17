@@ -105,6 +105,8 @@ void CCheckListBoxEx::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 		else m_szUsuario.Empty();
 	}
 	CCheckListBox::OnChar(nChar, nRepCnt, nFlags);
+	if(nChar==' ')  // enviamos la notificacion del cambio.
+		GetParent()->SendMessage(WM_COMMAND, MAKEWPARAM(GetDlgCtrlID() ,LBN_SELCHANGE), (LPARAM)m_hWnd);
 }
 
 void CCheckListBoxEx::OnTimer(UINT nIDEvent)

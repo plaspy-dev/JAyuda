@@ -44,10 +44,6 @@ public:
 
 // Attributes
 public:
-	bool		m_bSalto;
-	bool		m_bSaltoEx;
-	void		DrawBordes();
-	void		DrawBordes(bool draw);
 	// funciones del progress control
 	void SetRange(int minimo, int maximo);
 	void SetPos(int pos);
@@ -61,20 +57,15 @@ public:
 protected:
 	// nuevo con la barra de progreso
 	CTextProgressCtrl	m_wndTextProgress;
-	CXWinVersion		m_WVersion;
 	int		m_nMax;
 	int		m_nCurrent;
 	int		m_nStep;
 
 	CString		m_szMensaje;
 	CXInfoTip	m_Tip;
-	COLORREF	m_crOver;
-	COLORREF	m_crFocus;
-	COLORREF	m_crDefault;
 	CMouseMgr	m_MouseMgr;
 	int			m_hAlto;
 	int			m_hlFont;
-	bool		m_bDrawBordes;
 	int			m_nAncho;
 	virtual void PreSubclassWindow();
 
@@ -128,15 +119,11 @@ public:
 
 
 	afx_msg void OnPaint();
-	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-    afx_msg void OnMouseOut();
-	afx_msg void OnSysColorChange();
 	afx_msg LRESULT OnPaste(WPARAM Wparam, LPARAM LParam);
 	afx_msg void OnContextMenu(CWnd* /*pWnd*/, CPoint /*point*/);
 	
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
-	afx_msg void OnDestroy();
 	afx_msg void OnKillFocus(CWnd* pNewWnd);
 	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg HBRUSH CtlColor(CDC* pDC, UINT nCtlColor);
@@ -144,8 +131,7 @@ public:
 
 public:
 	// Text
-	__declspec(property(get=GetText,put=SetText))		CString	Text;
-	void	SetText(const CString &texto);
+	__declspec(property(get=GetText,put=SetWindowText))		CString	Text;
 	CString	GetText();
 
 	// Mensaje
@@ -157,7 +143,9 @@ public:
 	__declspec(property(get=GetProgressText,put=SetProgressText))		CString	ProgressText;
 	void	SetProgressText(const CString &mensaje);
 	CString  GetProgressText();
-	
+
+	__declspec(property(get=IsWindowEnabled,put=EnableWindow)) bool Enable;
+
 	void SetIcon(HICON hIcon=NULL,bool derecha=true);
 	void SetIcon(UINT nIcon=0,bool derecha=true);
 

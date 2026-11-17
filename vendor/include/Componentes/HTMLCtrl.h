@@ -9,6 +9,22 @@
 # include <afxhtml.h>
 
 
+class CHTMLCtrl;
+
+class CExternalJavaScript : public CCmdTarget
+{
+protected:
+	CHtmlView *m_pHtmlView;
+public:
+	CExternalJavaScript(CHtmlView *parent);
+	void closeApp();
+	void onHome();
+	void Resize(long width, long heigth);
+
+private:
+	DECLARE_DISPATCH_MAP()
+};
+
 class __COMPONENTES_EXPORT__ CHTMLCtrl : public CHtmlView 
 {
 public:
@@ -43,8 +59,8 @@ public:
 		DownloadComplete,
 		NavigateComplete2,
 		StatusTextChange,
-		TitleChange
-
+		TitleChange,
+		OnHomeRequested
 	};
 
 	//----------------------------------------------
@@ -89,6 +105,15 @@ private:
 
 	bool	m_bHTMLDocumentLoadedOK;
 	bool	m_bNavigate;
+public:
+	HRESULT OnGetExternal(LPDISPATCH *lppDispatch)
+	{
+		*lppDispatch = m_pExternal->GetIDispatch(TRUE);
+		return S_OK;
+	}
+
+private:
+	CExternalJavaScript *m_pExternal;
 };
 
 class Notification {					// all notifications pass this structure

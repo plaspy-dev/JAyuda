@@ -15,8 +15,6 @@ protected:
 
 private:
 	CThreadAuto		*m_pThreadOld;
-	volatile bool	m_bRealRunning;
-	bool			m_bWaitOnDestroy;
 protected:
 	volatile bool	m_bRunning;
 	virtual bool	Init();
@@ -27,5 +25,4 @@ public:
 	bool		Kill(bool wait=false);
 	bool		IsRunning();
 	int			GetThreadId();
-	void		WaitOnDestroy(bool wait=true);
 };

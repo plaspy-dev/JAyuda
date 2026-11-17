@@ -21,8 +21,10 @@ CDlgImportar::CDlgImportar(CWnd* pParent /*=NULL*/)
 
 CDlgImportar::~CDlgImportar()
 {
-	if( m_pImportThread)
-		delete m_pImportThread;
+	if( m_pImportThread) {
+		m_pImportThread->Kill();
+		m_pImportThread=NULL;
+	}
 }
 
 void CDlgImportar::DoDataExchange(CDataExchange* pDX)
@@ -51,7 +53,7 @@ void CDlgImportar::OnBnClickedCancel()
 	CWaitCursor wait;
 	if( m_pImportThread) 
 	{
-		delete m_pImportThread;
+		m_pImportThread->Kill();
 		m_pImportThread=NULL;
 	}
 	OnCancel();
@@ -81,7 +83,7 @@ LRESULT CDlgImportar::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			CWaitCursor wait;
 			if( m_pImportThread) 
 			{
-				delete m_pImportThread;
+				m_pImportThread->Kill();
 				m_pImportThread=NULL;
 			}
 			OnOK();

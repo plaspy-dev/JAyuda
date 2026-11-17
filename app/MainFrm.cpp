@@ -31,23 +31,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CMDIFrameWndXP)
 	ON_MESSAGE(WM_HHELP, OnQueryNavigate)
 END_MESSAGE_MAP()
 
-static UINT indicators[] =
-{
-	ID_SEPARATOR,
-	ID_INDICATOR_EXT,
-	ID_INDICATOR_EXT,
-	ID_INDICATOR_EXT,
-	ID_INDICATOR_EXT,
-	ID_INDICATOR_CAPS,
-	ID_INDICATOR_NUM,
-};
-
-
 // Construcción y destrucción de CMainFrame
 
 CMainFrame::CMainFrame()
 {
-	m_nAnimation=0;
 }
 
 CMainFrame::~CMainFrame()
@@ -60,74 +47,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CMDIFrameWndXP::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	// barra de herramientas principal
-	if (!m_wndToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
-		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_HIDE_INPLACE | CBRS_SIZE_DYNAMIC) ||
-		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
+	if (!m_wndHelpBar.Create(_T("Ayuda"), this, CRect(0, 0, 200, 200),TRUE, 514, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_LEFT | CBRS_FLOAT_MULTI))
 	{
-		TRACE0("No se pudo crear la barra de herramientas\n");
-		return -1;      // No se pudo crear
-	}
-	// barra de estado
-	if (!m_wndStatusBar.CreateStatusBar(this, indicators, sizeof(indicators)/sizeof(UINT)))
-	{
-		TRACE0("No se pudo crear la barra de estado\n");
-		return -1;      // Fehler beim Erzeugen
-	}
-	if(!m_wndHelpBar.Create("Ayuda", WS_CHILD, this, 201)) {
-		TRACE0("Fallo al crear la barra de ayuda\n");
+		TRACE0("Failed to create my ODS Bar\n");
 		return -1;
 	}
-
-	m_wndToolBar.EnableDocking(CBRS_ALIGN_ANY);
-	EnableDocking(CBRS_ALIGN_ANY);
-	DockControlBar(&m_wndToolBar);
-
-	m_wndHelpBar.SetBarStyle(m_wndHelpBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC);
+	EnableMDITabs(false);
 	m_wndHelpBar.EnableDocking(CBRS_ALIGN_ANY);
-	DockControlBar(&m_wndHelpBar, AFX_IDW_DOCKBAR_LEFT);
-
-	CREATE_JDOCK(this);
-
-	// los tabs
-	DWORD style = MT_TOP | MT_IMAGES | MT_HIDEWLT2VIEWS;
-	m_mdiTabs.Create(this, style);
-
-	// barra de estado
-	m_wndStatusBar.SetMode(1, XSB_PROGRESS | XSB_SMOOTH);
-	m_wndStatusBar.SetRange(1, 0, 100);
-	m_wndStatusBar.SetWidth(1, 100);
-	m_wndStatusBar.GetProgressCtrl(1)->SetShowText(false);
-	m_wndStatusBar.SetMode(2, XSB_TEXT | DT_CENTER);
-	m_wndStatusBar.SetText(2, " ");
-	m_wndStatusBar.SetWidth( 2, 100);
-
-	if( AfxGetApp()->GetProfileInt("control", "animation", 1)) {
-		m_wndStatusBar.SetMode(4, XSB_BITMAP | DT_CENTER);
-		CString temp;
-		temp.Format("%d", IDB_BLOADING1);
-		m_nAnimation=IDB_BLOADING1;
-		m_wndStatusBar.SetBitmap(4, temp, temp);
-		SetTimer(ANIMATION_TIMER, AfxGetApp()->GetProfileInt("control", "animationtimer", 200), NULL);
-	} else {
-		m_wndStatusBar.SetMode(4, XSB_TEXT | DT_CENTER);
-		m_wndStatusBar.SetNumber(4, 0, 0);
-	}
-
-	m_wndStatusBar.SetMode(3, XSB_TEXT | DT_CENTER);
-	m_wndStatusBar.SetText(3, " ", " ");
-	m_wndStatusBar.SetWidth(3, 100);
-
-	m_DefaultNewMenu.LoadToolBar(IDR_MAINFRAME, NULL);
-	// este es el de la licencia
-	SetTimer(4, 30*60*1000, NULL);
+	DockPane(&m_wndHelpBar);
 	
 	SetWindowText("JAyuda - " + CApplicacion::GetAppName());
 
 	LoadDocument(NULL, NULL, "Ayuda", IDR_TemplateTYPE,RUNTIME_CLASS(CHtmlHelpView));
-
-	AfxGetApp()->WriteProfileInt("control", "loadstate", 1);
 	LoadState();
-	AfxGetApp()->WriteProfileInt("control", "loadstate", 0);
 
 	return 0;
 }
@@ -161,11 +93,8 @@ void CMainFrame::Dump(CDumpContext& dc) const
 void CMainFrame::LoadState() {
 
 	CWaitCursor wait;
-
-	LoadBarState("barras\\Barras");
-	m_wndHelpBar.LoadStateBar("Barras\\Barras");
-	if( !AfxGetApp()->GetProfileInt("barras\\Barras", "store",0)) {
-		m_wndHelpBar.ShowWindow(SW_SHOW);
+	if( !AfxGetApp()->GetProfileInt("barras", "store",0)) {
+		m_wndHelpBar.ShowPane(true, false, false);
 	}
 	CMDIFrameWndXP::LoadState();
 }
@@ -173,29 +102,10 @@ void CMainFrame::LoadState() {
 void CMainFrame::SaveState() {
 
 	CMDIFrameWndXP::SaveState();
-	m_wndHelpBar.SaveBar("Barras\\Barras");
 }
 
 void CMainFrame::OnTimer(UINT nIDEvent)
 {
-	if( nIDEvent==ANIMATION_TIMER) {
-
-		if( !m_nCurrentHilos) {
-			if( m_nAnimation!= IDB_BLOADING1) {
-				m_nAnimation=IDB_BLOADING1;
-				CString temp;
-				temp.Format("%d", m_nAnimation);
-				m_wndStatusBar.SetBitmap(4, temp, temp);
-			}
-			return;
-		}
-		if( m_nAnimation==IDB_BLOADING10) 
-			m_nAnimation=IDB_BLOADING1;
-		m_nAnimation++;
-		CString temp;
-		temp.Format("%d", m_nAnimation);
-		m_wndStatusBar.SetBitmap(4, temp, temp);
-	}
 	CMDIFrameWndXP::OnTimer(nIDEvent);
 }
 
@@ -207,9 +117,20 @@ CDocument *CMainFrame::OnAbrir(CString archivo) {
 	
 	CDocument *documento=NULL;
 	bool found=false;
-	for ( CWnd *child=m_LogoMdiClientWnd.GetTopWindow(); child; child =child->GetNextWindow()) {
-		if(child && child->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
-			CView *vista=((CMDIChildWnd *) child)->GetActiveView();
+
+	CWnd *mdi;
+	for(mdi= AfxGetMainWnd()->GetTopWindow() ; mdi; mdi= mdi->GetNextWindow()) {
+		char wndClass[32];
+		::GetClassName(*mdi, wndClass, 32);
+		if (strncmp(wndClass, "MDIClient", 32) == 0) 
+			break;
+	}
+	if(mdi) {
+		mdi= mdi->GetTopWindow();
+		if( mdi&& mdi->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
+
+			CView *vista= ((CMDIChildWnd *) mdi)->GetActiveView();
+			((CMDIChildWnd *) mdi)->MDIMaximize();
 			if( vista && ::IsWindow(*vista) && vista->IsKindOf(RUNTIME_CLASS(CHtmlHelpView))) {
 				CString cadena= AfxGetApp()->m_lpCmdLine;
 				if(cadena.Find("/t")!=-1) {
@@ -223,10 +144,10 @@ CDocument *CMainFrame::OnAbrir(CString archivo) {
 				CDocTemplate *temp = AfxGetApp()->m_pDocManager->GetNextDocTemplate(pos);
 				pos= temp->GetFirstDocPosition();
 				documento= temp->GetNextDoc(pos);
-				break;
 			}
 		}
 	}
+
 	if(!documento) {
 		CWaitCursor wait;
 		AfxGetApp()->m_pDocManager->OnFileNew();
@@ -246,52 +167,115 @@ void CMainFrame::OnAyudaAyuda()
 
 void CMainFrame::OnAyudaIndice()
 {
-	if( !m_wndHelpBar.IsWindowVisible())  {
-
-		if(m_wndHelpBar.IsHide()) {
-
-			m_wndHelpBar.InitShow();
-			return;
-		}
-	}
+	if(::IsWindow(m_wndHelpBar)) 
+		m_wndHelpBar.ShowPane(true, false, true);
 	m_wndHelpBar.m_pDlgHelp.m_TabCtrl.ActivateSSLPage(0);
-	if( !m_wndHelpBar.IsWindowVisible())
-		m_wndHelpBar.ShowWindow((m_wndHelpBar.IsWindowVisible()) == 0);
-	RecalcLayout();
 }
 
 void CMainFrame::OnAyudaBuscar()
 {
-	if( !m_wndHelpBar.IsWindowVisible()) {
-
-		if(m_wndHelpBar.IsHide()) {
-
-			m_wndHelpBar.InitShow();
-			return;
-		}
-	}
+	if(::IsWindow(m_wndHelpBar)) 
+		m_wndHelpBar.ShowPane(true, false, true);
 	m_wndHelpBar.m_pDlgHelp.m_TabCtrl.ActivateSSLPage(1);
-	if( !m_wndHelpBar.IsWindowVisible())
-		m_wndHelpBar.ShowWindow((m_wndHelpBar.IsWindowVisible()) == 0);
-	RecalcLayout();
 }
 
 void CMainFrame::OnUpdateAyudaIndice(CCmdUI *pCmdUI)
 {
-	if(m_wndHelpBar.IsWindowVisible()) 
-		pCmdUI->SetRadio(m_wndHelpBar.m_pDlgHelp.m_TabCtrl.GetCurSel()==0);
+	pCmdUI->SetCheck(m_wndHelpBar.IsWindowVisible() && m_wndHelpBar.m_pDlgHelp.m_TabCtrl.GetCurSel()==0);
 }
 
 void CMainFrame::OnUpdateAyudaBuscar(CCmdUI *pCmdUI)
 {
-	if(m_wndHelpBar.IsWindowVisible()) 
-		pCmdUI->SetRadio(m_wndHelpBar.m_pDlgHelp.m_TabCtrl.GetCurSel()==1);
+	pCmdUI->SetCheck(m_wndHelpBar.IsWindowVisible() && m_wndHelpBar.m_pDlgHelp.m_TabCtrl.GetCurSel()==1);
 }
 
 LRESULT CMainFrame::OnQueryNavigate(WPARAM wParam, LPARAM lParam) {
 
 	if(wParam==0) 
 		m_wndHelpBar.m_pDlgHelp.SendMessage(WM_HHELP, wParam, lParam);
-	else SendMessageBroadCast(WM_HHELP, wParam, lParam);
+	else {
+		CWnd *mdi;
+		for(mdi= AfxGetMainWnd()->GetTopWindow() ; mdi; mdi= mdi->GetNextWindow()) {
+			char wndClass[32];
+			::GetClassName(*mdi, wndClass, 32);
+			if (strncmp(wndClass, "MDIClient", 32) == 0) 
+				break;
+		}
+		if(mdi) {
+			mdi= mdi->GetTopWindow();
+			if( mdi&& mdi->IsKindOf(RUNTIME_CLASS(CMDIChildWnd))) {
+
+				CView *vista= ((CMDIChildWnd *) mdi)->GetActiveView();
+				((CMDIChildWnd *) mdi)->MDIMaximize();
+				if(vista)
+					vista->SendMessage(WM_HHELP, wParam, lParam);
+			}
+		}
+	}
 	return 0;
+}
+
+
+void CMainFrame::InitializeRibbon()
+{
+	// Load panel images:
+	m_PanelImages.SetImageSize(CSize(16, 16));
+	m_PanelImages.Load(IDB_BUTTONS);
+
+	// Init main button:
+	m_MainButton.SetImage(IDB_MAIN);
+	m_MainButton.SetText(_T("\nf"));
+	m_MainButton.SetToolTipText("Archivo");
+
+	m_wndRibbonBar.SetApplicationButton(&m_MainButton, CSize (45, 45));
+	CMFCRibbonMainPanel* pMainPanel = m_wndRibbonBar.AddMainCategory("Archivo", IDB_FILESMALL, IDB_FILELARGE);
+
+	pMainPanel->Add(new CMFCRibbonButton(ID_FILE_SAVE_AS, "Guardar Como", 3, 3));
+	CMFCRibbonButton* pBtnPrint = new CMFCRibbonButton(ID_FILE_PRINT, "Imprimir", 6, 6);
+	pBtnPrint->SetKeys(_T("p"), _T("w"));
+	pBtnPrint->AddSubItem(new CMFCRibbonLabel("Previsualizar e imprimir el documento"));
+	pBtnPrint->AddSubItem(new CMFCRibbonButton(ID_FILE_PRINT_DIRECT, "&Impresión rapida", 7, 7, TRUE));
+	pBtnPrint->AddSubItem(new CMFCRibbonButton(ID_FILE_PRINT_PREVIEW, "&Vista preliminar", 8, 8, TRUE));
+	pBtnPrint->AddSubItem(new CMFCRibbonButton(ID_FILE_PRINT_SETUP, "&Configurar página", 11, 11, TRUE));
+	pMainPanel->Add(pBtnPrint);
+
+	pMainPanel->AddRecentFilesList("");
+	pMainPanel->AddToBottom(new CMFCRibbonMainPanelButton(ID_APP_EXIT, "Salir", 15));
+	// este es el menu principal
+
+
+	// Add "Home" category with "Clipboard" panel:
+	CMFCRibbonCategory* pCategoryHome = m_wndRibbonBar.AddCategory("Inicio", IDB_WRITESMALL, IDB_WRITELARGE);
+
+	// crear panel de impresion
+	CMFCRibbonPanel* pPanelImpresion = pCategoryHome->AddPanel("Impresión\ne", m_PanelImages.ExtractIcon(27));
+	pPanelImpresion->Add(new CMFCRibbonButton(ID_FILE_PRINT, "Imprimir\nv", 11, 2));
+
+	// Create "Clipboard" panel:
+	CMFCRibbonPanel* pPanelClipboard = pCategoryHome->AddPanel("Portapapeles\nd", m_PanelImages.ExtractIcon(27));
+
+	pPanelClipboard->Add(new CMFCRibbonButton(ID_EDIT_COPY, "Copiar\nc", 2));
+
+	// Create and add a "View" panel:
+	CMFCRibbonPanel* pPanelView = pCategoryHome->AddPanel("Ver", m_PanelImages.ExtractIcon (7));
+
+	CMFCRibbonButton* pBtnStatusBar = new CMFCRibbonCheckBox(ID_VIEW_STATUS_BAR, "Barra de estado");
+	pPanelView->Add(pBtnStatusBar);
+	pPanelView->Add(new CMFCRibbonCheckBox(ID_AYUDA_INDICE, "Índice"));
+	pPanelView->Add(new CMFCRibbonCheckBox(ID_AYUDA_BUSCAR, "Buscar"));
+
+	// crear panel de impresion
+	CMFCRibbonPanel* pPanelAyuda = pCategoryHome->AddPanel("Acerca de\ne", m_PanelImages.ExtractIcon(27));
+	pPanelAyuda->Add(new CMFCRibbonButton(ID_APP_ABOUT, "Acerca de\nv", 12, 3));
+
+
+	// Add quick access toolbar commands:
+	CList<UINT, UINT> lstQATCmds;
+
+	lstQATCmds.AddTail(ID_FILE_PRINT);
+
+	m_wndRibbonBar.SetQuickAccessCommands(lstQATCmds);
+	m_wndRibbonBar.AddToTabs(new CMFCRibbonButton(ID_APP_ABOUT, _T("\na"), m_PanelImages.ExtractIcon(0)));
+
+	CMDIFrameWndXP::InitializeRibbon();
 }

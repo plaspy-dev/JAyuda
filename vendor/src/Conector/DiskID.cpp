@@ -443,7 +443,7 @@ int CDiskID::ReadPhysicalDriveInNTWithZeroRights (void)
 
 				strcpy (serialNumber, flipAndCodeBytes ( & buffer [descrip -> SerialNumberOffset]));
 				strcpy (modelNumber, & buffer [descrip -> ProductIdOffset]);
-				AddDiscoDuro(serialNumber);
+				AddDiscoDuro(modelNumber, serialNumber);
 			}
 			else
 		 {
@@ -465,7 +465,7 @@ int CDiskID::ReadPhysicalDriveInNTWithZeroRights (void)
 				// char modelNumber [1000];
 
 				strcpy (serialNumber, (char *) mediaSerialNumber -> SerialNumberData);
-				AddDiscoDuro(serialNumber);
+				AddDiscoDuro("", serialNumber);
 		 }
 			else
 		 {
@@ -698,11 +698,20 @@ int CDiskID::ReadIdeDriveAsScsiDriveInNT (void)
 
 void CDiskID::PrintIdeInfo (int drive, DWORD diskdata [256])
 {
-	char HardDriveSerialNumber[1024];
+	char serialNumber [1024];
+	char modelNumber [1024];
+	char revisionNumber [1024];
+	char bufferSize [32];
+
 	//  copy the hard drive serial number to the buffer
-	strcpy (HardDriveSerialNumber, ConvertToString (diskdata, 10, 19));
+	ConvertToString (diskdata, 10, 19, serialNumber);
+	ConvertToString (diskdata, 27, 46, modelNumber);
+	ConvertToString (diskdata, 23, 26, revisionNumber);
+	sprintf (bufferSize, "%u", diskdata [21] * 512);
+	// strcpy (HardDriveSerialNumber, ConvertToString (diskdata, 10, 19));
+
 	// esta linea es la mia
-	AddDiscoDuro(HardDriveSerialNumber);
+	AddDiscoDuro(modelNumber, serialNumber);
 
 	/*__int64 sectors = 0;
 	__int64 bytes = 0;
@@ -725,9 +734,12 @@ void CDiskID::PrintIdeInfo (int drive, DWORD diskdata [256])
 		WriteConstantString (string1, "Unknown");*/
 }
 
-char *CDiskID::ConvertToString (DWORD diskdata [256], int firstIndex, int lastIndex)
+
+char *CDiskID::ConvertToString (DWORD diskdata [256],
+					   int firstIndex,
+					   int lastIndex,
+					   char* buf)
 {
-	static char string [1024];
 	int index = 0;
 	int position = 0;
 
@@ -735,22 +747,20 @@ char *CDiskID::ConvertToString (DWORD diskdata [256], int firstIndex, int lastIn
 	for (index = firstIndex; index <= lastIndex; index++)
 	{
 		//  get high byte for 1st character
-		string [position] = (char) (diskdata [index] / 256);
-		position++;
+		buf [position++] = (char) (diskdata [index] / 256);
 
 		//  get low byte for 2nd character
-		string [position] = (char) (diskdata [index] % 256);
-		position++;
+		buf [position++] = (char) (diskdata [index] % 256);
 	}
 
 	//  end the string 
-	string [position] = '\0';
+	buf[position] = '\0';
 
 	//  cut off the trailing blanks
-	for (index = position - 1; index > 0 && ' ' == string [index]; index--)
-		string [index] = '\0';
+	for (index = position - 1; index > 0 && isspace(buf [index]); index--)
+		buf [index] = '\0';
 
-	return string;
+	return buf;
 }
 
 long CDiskID::getHardDriveComputerID ()
@@ -799,9 +809,21 @@ CDiskID::~CDiskID(void)
 
 int CDiskID::GetDiscosDuros() {
 
-	if(m_szIDDiscosDuros.IsEmpty())
+	if(m_szIDDiscosDuros.IsEmpty()) {
 		m_szIDDiscosDuros.Add("esteesmiserialgenerico");
+		m_saModelosDiscos.Add("SDG");
+	}
 	return m_szIDDiscosDuros.GetCount();
+}
+
+CString CDiskID::GetSerialDisco(int index) {
+
+	return m_szIDDiscosDuros.GetCount()>=index ? "" : m_szIDDiscosDuros[index];
+}
+
+CString CDiskID::GetModelName(int index) {
+
+	return m_saModelosDiscos.GetCount()>=index ? "" : m_saModelosDiscos[index];
 }
 
 unsigned int CDiskID::GetSerialNumber(int index/*=-1*/) {
@@ -878,8 +900,9 @@ unsigned int CDiskID::GetSerialNumber(int index/*=-1*/) {
 	return (unsigned int) id;
 }
 
-void CDiskID::AddDiscoDuro(CString cadena) {
+void CDiskID::AddDiscoDuro(CString modelo, CString cadena) {
 
+	cadena.Trim();
 	if(cadena.IsEmpty())
 		return;
 	// solo se guardan los seriales con espacio por compatibilidad con versiones anteriores
@@ -887,9 +910,7 @@ void CDiskID::AddDiscoDuro(CString cadena) {
 		if(m_szIDDiscosDuros[i]==cadena)
 			return;
 	}
+
 	m_szIDDiscosDuros.Add(cadena);
-	if(cadena.Find(' ')!=-1) {
-		cadena.Trim();
-		AddDiscoDuro(cadena);
-	}
+	m_saModelosDiscos.Add(modelo);
 }

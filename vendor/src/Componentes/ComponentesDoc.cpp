@@ -34,10 +34,6 @@ BOOL CComponentesDoc::OnNewDocument()
 {
 	if (!CDocument::OnNewDocument())
 		return FALSE;
-
-	// TODO: agregar aquí código de reinicio
-	// (los documentos SDI volverán a utilizar este documento)
-
 	return TRUE;
 }
 

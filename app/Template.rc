@@ -73,18 +73,13 @@ IDR_TemplateTYPE        ICON                    "res\\TemplateDoc.ico"
 //
 
 IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
-IDB_BLOADING11          BITMAP                  "res\\loading\\loading0011.bmp"
-IDB_BLOADING1           BITMAP                  "res\\loading\\loading0001.bmp"
-IDB_BLOADING2           BITMAP                  "res\\loading\\loading0002.bmp"
-IDB_BLOADING3           BITMAP                  "res\\loading\\loading0003.bmp"
-IDB_BLOADING4           BITMAP                  "res\\loading\\loading0004.bmp"
-IDB_BLOADING5           BITMAP                  "res\\loading\\loading0005.bmp"
-IDB_BLOADING6           BITMAP                  "res\\loading\\loading0006.bmp"
-IDB_BLOADING7           BITMAP                  "res\\loading\\loading0007.bmp"
-IDB_BLOADING8           BITMAP                  "res\\loading\\loading0008.bmp"
-IDB_BLOADING9           BITMAP                  "res\\loading\\loading0009.bmp"
-IDB_BLOADING10          BITMAP                  "res\\loading\\loading0010.bmp"
 IDB_BASISTENTE          BITMAP                  "res\\asistente.bmp"
+IDB_BUTTONS             BITMAP                  "res\\buttons.bmp"
+IDB_FILELARGE           BITMAP                  "res\\filelarge.bmp"
+IDB_FILESMALL           BITMAP                  "res\\filesmall.bmp"
+IDB_MAIN                BITMAP                  "res\\main.bmp"
+IDB_WRITELARGE          BITMAP                  "res\\writelarge.bmp"
+IDB_WRITESMALL          BITMAP                  "res\\writesmall.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -222,8 +217,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,1
- PRODUCTVERSION 1,1,0,1
+ FILEVERSION 2,0,0,1
+ PRODUCTVERSION 2,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -240,12 +235,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SDG (Software Developers Group)"
             VALUE "FileDescription", "Programa de ayuda"
-            VALUE "FileVersion", "1.1.0.1"
+            VALUE "FileVersion", "2.0.0.1"
             VALUE "InternalName", "JAyuda.exe"
             VALUE "LegalCopyright", "SDG (Software Developers Group). Reservados todos los derechos."
             VALUE "OriginalFilename", "JAyuda.exe"
             VALUE "ProductName", "Ayuda"
-            VALUE "ProductVersion", "1.1.0.1"
+            VALUE "ProductVersion", "2.0.0.1"
         END
     END
     BLOCK "VarFileInfo"

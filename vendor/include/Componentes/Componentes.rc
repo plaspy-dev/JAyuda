@@ -133,12 +133,12 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Acerca de ..."
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    RTEXT           "Versión 1.0",IDC_SVERSION,67,20,161,8,SS_NOPREFIX
-    RTEXT           "Copyright (C) 2007",IDC_STATIC,59,34,169,8
+    RTEXT           "Versión 1.0",IDC_SVERSION,65,20,161,8,SS_NOPREFIX
+    RTEXT           "Copyright (C) 2007",IDC_STATIC,57,34,169,8
     DEFPUSHBUTTON   "Aceptar",IDOK,178,63,50,16,WS_GROUP
-    LTEXT           "Programado por SDG LTDA. Todos los derechos reservados.",IDC_SLINKEX,35,49,193,8
+    PUSHBUTTON      "Programado por SDG LTDA. Todos los derechos reservados.",IDC_SLINKEX,33,49,193,8
     ICON            128,IDC_SICONO,7,7,20,20
-    RTEXT           "SDG LTDA.",IDC_SPROGRAMA,38,7,190,8
+    RTEXT           "SDG LTDA.",IDC_SPROGRAMA,36,7,190,8
 END
 
 
@@ -166,13 +166,27 @@ END
 // Bitmap
 //
 
-IDB_BITMAP1             BITMAP                  "res\\guidockbar.bmp"
 IDB_TREELIST_CHECK      BITMAP                  "res\\bm_checkbox.bmp"
 IDB_TREELIST_SORT       BITMAP                  "res\\bm_def_sort.bmp"
 IDB_MATRIXTINY          BITMAP                  "res\\matrixsettinyblue.bmp"
 IDB_MATRIXLARGE         BITMAP                  "res\\matrixsetblue.bmp"
 IDB_MATRIXSMALL         BITMAP                  "res\\matrixsetsmallblue.bmp"
 IDB_BLOGO               BITMAP                  "res\\logo.bmp"
+IDB_BLOADING            BITMAP                  "res\\loading.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_THEME_MENU MENU 
+BEGIN
+    MENUITEM "Estilo &Azul",                ID_VIEW_APPLOOK_OFF_2007_BLUE
+    MENUITEM "Estilo &Negro",               ID_VIEW_APPLOOK_OFF_2007_BLACK
+    MENUITEM "Estilo &Plateado",            ID_VIEW_APPLOOK_OFF_2007_SILVER
+    MENUITEM "Estilo A&qua",                ID_VIEW_APPLOOK_OFF_2007_AQUA
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

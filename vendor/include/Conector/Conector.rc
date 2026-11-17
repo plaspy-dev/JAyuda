@@ -13,7 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// Inglés (Estados Unidos) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
@@ -79,7 +79,7 @@ BEGIN
     CONTROL         "Recordar contraseña",IDC_CRECORDAR,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,48,40,83,10
 END
 
-IDD_DIALOGCONEXIONES DIALOGEX 0, 0, 193, 201
+IDD_DIALOGCONEXIONES DIALOGEX 0, 0, 193, 296
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Bases de Datos"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -88,18 +88,33 @@ BEGIN
     EDITTEXT        IDC_EDITNOMBREDB,101,84,84,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDITPUERTO,138,111,47,14,ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_EDITREINTENTOS,138,126,47,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_EARCHIVO,37,143,128,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "...",IDC_BEXAMINAR,167,143,18,14
-    DEFPUSHBUTTON   "&Aceptar",IDOK,43,174,50,14
-    PUSHBUTTON      "&Cancelar",IDCANCEL,102,174,50,14
+    EDITTEXT        IDC_EKEEPALIVE,138,142,47,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EARCHIVO,37,176,128,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "...",IDC_BEXAMINAR,167,176,18,14
+    DEFPUSHBUTTON   "&Aceptar",IDOK,43,273,50,14
+    PUSHBUTTON      "&Cancelar",IDCANCEL,102,273,50,14
     CONTROL         "",IDC_LISTDB,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,179,56
     LTEXT           "Nombre del servidor",IDC_STATIC,7,69,65,8
     LTEXT           "Puerto",IDC_STATIC,35,114,22,8
     LTEXT           "Nombre de la Base de datos",IDC_STATIC,7,86,90,8
     LTEXT           "Avanzado",IDC_STATICPRIMERO,7,102,179,8
-    LTEXT           "Avanzado",IDC_STATICSEGUNDO,7,161,179,8
+    LTEXT           "Proxy",IDC_STATICSEGUNDO,7,194,179,8
     LTEXT           "Reintentos",IDC_STATIC,35,129,36,8
-    LTEXT           "Almacén",IDC_SARCHIVO,7,145,28,8
+    LTEXT           "Almacén",IDC_SARCHIVO,7,178,28,8
+    LTEXT           "Fin proxy",IDC_SFINPROXY,7,252,179,8
+    LTEXT           "Tipo",IDC_STATIC,8,207,14,8
+    COMBOBOX        IDC_CPROXY,36,205,48,30,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Servidor",IDC_STATIC,7,223,28,8
+    EDITTEXT        IDC_ESERVIDOR,36,220,87,14,ES_AUTOHSCROLL
+    LTEXT           "Puerto",IDC_STATIC,127,223,22,8
+    EDITTEXT        IDC_EPUERTO,154,220,31,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Usuario",IDC_STATIC,7,239,25,8
+    EDITTEXT        IDC_EUSUARIO,36,236,52,14,ES_AUTOHSCROLL
+    LTEXT           "Contraseña",IDC_STATIC,94,239,38,8
+    EDITTEXT        IDC_ECONTRASENA,133,236,52,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Keep Alive (seg.)",IDC_STATIC,35,145,56,8
+    LTEXT           "Tiempo máximo de lectura (seg.)",IDC_STATIC,35,161,105,8
+    EDITTEXT        IDC_ELECTURATIMEOUT,138,158,47,14,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
 END
 
 IDD_PBIENVENIDO DIALOGEX 0, 0, 284, 154
@@ -179,7 +194,7 @@ BEGIN
 
     IDD_DIALOGCONEXIONES, DIALOG
     BEGIN
-        BOTTOMMARGIN, 174
+        BOTTOMMARGIN, 287
     END
 
     IDD_PBIENVENIDO, DIALOG
@@ -208,12 +223,12 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.S.) resources
+#endif    // Inglés (Estados Unidos) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Spanish (Colombia) resources
+// Español (Colombia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESO)
 #ifdef _WIN32
@@ -252,12 +267,12 @@ BEGIN
     LTEXT           "Es el equipo donde se encuentra la base de datos. Para uso local es “localhost” de lo contrario coloque la dirección IP o nombre del equipo por ejemplo: 192.168.0.1 o equipo-2.example.invalid",IDC_STATIC,7,7,246,25
 END
 
-IDD_DWEBPASSWORD DIALOGEX 0, 0, 272, 129
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Su contraseña ha expirado."
+IDD_DWEBPASSWORD DIALOGEX 0, 0, 157, 63
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Cambio de contraseña"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    EDITTEXT        IDC_EWEBBROWSER,0,0,271,128,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EWEBBROWSER,0,0,157,63,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL
 END
 
 
@@ -330,7 +345,7 @@ END
 //
 
 IDB_BASISTENTE          BITMAP                  "res\\asistente.bmp"
-#endif    // Spanish (Colombia) resources
+#endif    // Español (Colombia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

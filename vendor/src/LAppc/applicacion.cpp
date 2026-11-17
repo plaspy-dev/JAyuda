@@ -153,7 +153,7 @@ void CApplicacion::SetAppKey(CString key) {
 
 CString CApplicacion::GetAppKey() {
 #ifndef ENABLE_LICENSE_CHECK
-	return _T("Software\\JAyuda\\1.1");
+	return _T("Software\\JAyuda\\2.0");
 #endif
 	if(m_szAppKey.IsEmpty()) {
 		

@@ -125,13 +125,17 @@ void ValidateScroll(CWnd *componente) {
 		}
 		if( rect.bottom>rectparent.bottom) {
 			delta= rectparent.bottom-rect.bottom-rect.Height();
+			if(GetWindowLong(*parent,GWL_STYLE)&WS_HSCROLL==0) { // no
+			} else {
+				delta-=2*GetSystemMetrics(SM_CXHSCROLL);
+			}
 			if(parent->GetScrollPos(SB_VERT)-delta<0) 
 				delta= parent->GetScrollPos(SB_VERT);
 			parent->ScrollWindow(0,delta);
 			parent->SetScrollPos(SB_VERT, parent->GetScrollPos(SB_VERT)-delta);
 		} 
 		if( rect.left<rectparent.left) {
-			delta= rectparent.left-rect.left;
+			delta= rectparent.left-rect.left +rect.CenterPoint().x;
 			if(parent->GetScrollPos(SB_HORZ)-delta<0) 
 				delta= parent->GetScrollPos(SB_HORZ);
 			parent->ScrollWindow(delta, 0);
@@ -141,6 +145,10 @@ void ValidateScroll(CWnd *componente) {
 			delta= rectparent.right-rect.right;
 			if(parent->GetScrollPos(SB_HORZ)-delta<0) 
 				delta= parent->GetScrollPos(SB_HORZ);
+			if(GetWindowLong(*parent,GWL_STYLE)&WS_VSCROLL==0) { // no
+			} else {
+				delta-=2*GetSystemMetrics(SM_CXVSCROLL);
+			}
 			parent->ScrollWindow(delta, 0);
 			parent->SetScrollPos(SB_HORZ, parent->GetScrollPos(SB_HORZ)-delta);
 		}
@@ -312,7 +320,7 @@ void RecalculateScroll(CFormView *parent, int delta/*=10*/) {
 			alto= otro.bottom;
 		pChild = pChild->GetWindow(GW_HWNDNEXT);
 	}
-	parent->SetScrollSizes(MM_TEXT, CSize(abs(izquierda)+ancho+delta,abs(minimo)+alto+delta));
+	parent->SetScrollSizes(MM_TEXT, CSize(abs(izquierda)+ancho+delta,abs(minimo)+alto+2*delta));
 }
 
 CResourceDLL::CResourceDLL()

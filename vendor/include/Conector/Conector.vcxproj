@@ -133,7 +133,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Conector\ArrayDB.cpp" />
+    <ClCompile Include="..\..\src\Conector\AsyncProxySocket.cpp" />
     <ClCompile Include="..\..\src\Conector\BienvenidoPP.cpp" />
+    <ClCompile Include="..\..\src\Conector\CBase64Coding.cpp" />
     <ClCompile Include="..\..\src\Conector\Conector.cpp" />
     <ClCompile Include="..\..\src\Conector\ConectorFormView.cpp" />
     <ClCompile Include="..\..\src\Conector\DiskID.cpp" />
@@ -154,10 +156,12 @@
     <ClCompile Include="..\..\src\Conector\TerminarPP.cpp" />
     <ClCompile Include="..\..\src\Conector\ThreadMySQL.cpp" />
     <ClCompile Include="..\..\src\Conector\TrialInfo.cpp" />
+    <ClCompile Include="..\..\src\Conector\TunnelSocket.cpp" />
     <ClCompile Include="..\..\src\Conector\Usuario.cpp" />
     <ClCompile Include="..\..\src\Conector\Usuario2.cpp" />
     <ClCompile Include="..\..\src\Conector\UsuarioPP.cpp" />
     <ClCompile Include="DlgIngreso3.cpp" />
+    <ClCompile Include="PropiedadesBar.cpp" />
     <ClCompile Include="Usuario3.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -166,7 +170,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArrayDB.h" />
+    <ClInclude Include="AsyncProxySocket.h" />
     <ClInclude Include="BienvenidoPP.h" />
+    <ClInclude Include="CBase64Coding.h" />
     <ClInclude Include="Conector.h" />
     <ClInclude Include="ConectorFormView.h" />
     <ClInclude Include="DiskID.h" />
@@ -177,6 +183,7 @@
     <ClInclude Include="DlgIngreso3.h" />
     <ClInclude Include="DlgWebContrasena.h" />
     <ClInclude Include="MySQLMessage.h" />
+    <ClInclude Include="PropiedadesBar.h" />
     <ClInclude Include="Query.h" />
     <ClInclude Include="RealConector.h" />
     <ClInclude Include="Resource.h" />
@@ -187,6 +194,7 @@
     <ClInclude Include="TerminarPP.h" />
     <ClInclude Include="ThreadMySQL.h" />
     <ClInclude Include="TrialInfo.h" />
+    <ClInclude Include="TunnelSocket.h" />
     <ClInclude Include="Usuario.h" />
     <ClInclude Include="Usuario2.h" />
     <ClInclude Include="Usuario3.h" />

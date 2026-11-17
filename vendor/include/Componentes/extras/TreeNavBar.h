@@ -1,5 +1,4 @@
 # pragma once
-#include "../GuiControlBar.h"
 #include "../treectrlxp.h"
 //***************************************************************************
 //
@@ -10,7 +9,7 @@
 // ORIGINAL: 
 //
 //***************************************************************************
-class __COMPONENTES_EXPORT__ CTreeNavBar : public CGuiControlBar
+class __COMPONENTES_EXPORT__ CTreeNavBar : public CDockablePane
 {
 	// Construction
 public:
@@ -96,5 +95,7 @@ protected:
 	afx_msg void OnChangeSelArborReal(NMHDR* pNMHDR, LRESULT* pResult);
 	
 DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };
 

@@ -15,7 +15,6 @@ public:
 private:
 
 protected:
-	CToolBarXP		m_wndToolBar;
 	CHelpBar		m_wndHelpBar;
 // Atributos
 public:
@@ -58,6 +57,7 @@ public:
 	afx_msg void OnUpdateAyudaBuscar(CCmdUI *pCmdUI);
 
 	LRESULT OnQueryNavigate(WPARAM wParam, LPARAM lParam);
+	virtual void InitializeRibbon();
 };
 
 

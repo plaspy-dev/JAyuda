@@ -13,7 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Spanish (Colombia) resources
+// Español (Colombia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESO)
 #ifdef _WIN32
@@ -66,7 +66,7 @@ IDD_FINDEX DIALOGEX 0, 0, 185, 93
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    CONTROL         "",IDC_TINDEX,"SysTreeView32",TVS_SHOWSELALWAYS | TVS_TRACKSELECT | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP | 0x400,7,4,167,83
+    CONTROL         "",IDC_TINDEX,"SysTreeView32",TVS_SHOWSELALWAYS | TVS_TRACKSELECT | TVS_FULLROWSELECT | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,4,167,83
 END
 
 IDD_FSEARCHHELP DIALOGEX 0, 0, 185, 93
@@ -83,28 +83,6 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     CONTROL         "",IDC_TELEMENTOS,"SysTabControl32",TCS_MULTILINE,5,4,171,80
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDR_TOOLBARNAVEGADOR    BITMAP                  "res\\toolbar1.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Toolbar
-//
-
-IDR_TOOLBARNAVEGADOR TOOLBAR  16, 16
-BEGIN
-    BUTTON      ID_ATRAS
-    BUTTON      ID_ADELANTE
-    BUTTON      ID_CANCELAR
-    BUTTON      ID_RELOAD
-    BUTTON      ID_HOME
 END
 
 
@@ -146,7 +124,15 @@ BEGIN
     END
 END
 
-#endif    // Spanish (Colombia) resources
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BGRANDE             BITMAP                  "res\\grande.bmp"
+IDB_BSMALL              BITMAP                  "res\\pequeno.bmp"
+#endif    // Español (Colombia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
