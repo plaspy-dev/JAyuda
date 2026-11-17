@@ -50,6 +50,10 @@ Select **Ayuda** to open the demonstration guide. The topic index lists **Guía 
 
 The executable resource identifies this archived version as 2.0.0.1. This version uses a ribbon with a Navigation tab for moving between pages. It retains the index and search tabs in the left pane. The application source folders carry the backup date January 7, 2020 UTC. The original edit dates are unknown.
 
+### Archive variants
+
+The project resource identifies this snapshot as 2.0.0.1. Consult the first commit for 1.1.0.1 with its classic toolbar. The two portable builds keep separate Windows preferences so their docking layouts do not conflict.
+
 ### Contributing
 
 When reporting an issue, include the snapshot version, the build command and the fictional page or query that reproduced it.
@@ -112,6 +116,10 @@ Selecciona **Ayuda** para abrir la guía de demostración. El índice contiene *
 ### Historia
 
 El recurso del ejecutable identifica esta versión del respaldo como 2.0.0.1. Esta versión usa una cinta con la pestaña Navegación para moverse entre páginas. Conserva el índice y la búsqueda en el panel izquierdo. Las carpetas de la aplicación llevan la fecha de respaldo del 7 de enero de 2020 en UTC. Las fechas originales de edición se desconocen.
+
+### Versiones del respaldo
+
+El recurso del proyecto identifica esta copia como 2.0.0.1. Consulta el primer commit para ver la 1.1.0.1 con su barra clásica. Las dos compilaciones portátiles guardan sus preferencias de Windows por separado para evitar conflictos entre los diseños del panel.
 
 ### Contribuir
 
