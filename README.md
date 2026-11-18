@@ -7,7 +7,7 @@
 Legacy Windows help viewer with a topic index, keyword search and links between guide pages
 
 > [!WARNING]
-> **Status: Legacy.** This is a Windows MFC application with the system’s embedded MSHTML browser.
+> **Status: Legacy.** This is a Windows MFC application with the system’s embedded MSHTML browser. All four commits built and found the fictional guide in local tests.
 
 ### Overview
 
@@ -44,7 +44,7 @@ Select **Ayuda** to open the demonstration guide. The topic index lists **Guía 
 
 ### Project structure
 
-`app/` contains the window code and archived Visual Studio project. `vendor/` contains the recovered shared-library sources with their original and converted projects. `JAyuda.sln` builds the Win32 viewer and those libraries. `compat/` redirects the old theme header name to the current Windows SDK. `examples/demo.py` creates the guide and its local HTTP server.
+`app/` contains the window code and archived Visual Studio project. `vendor/` contains the recovered shared-library sources with their original and converted projects. `JAyuda.sln` builds the Win32 viewer and those libraries. `compat/` redirects the old theme header name to the current Windows SDK. `examples/demo.py` creates the guide and its local HTTP server. `docs/media/` records the tested window and search result.
 
 ### History
 
@@ -54,6 +54,10 @@ The executable resource identifies this archived version as 2.0.0.1. This versio
 
 The project resource identifies this snapshot as 2.0.0.1. Consult the first commit for 1.1.0.1 with its classic toolbar. The two portable builds keep separate Windows preferences so their docking layouts do not conflict.
 
+### What the fictional guide verifies
+
+The guide combines a local index and a topic served by a disposable HTTP container. The main browser page shows the instructions for `DEMO-104`, while **Buscar** finds the indexed guide and reports one match. This runs without an application serial or the installer’s metadata module.
+
 ### Contributing
 
 When reporting an issue, include the snapshot version, the build command and the fictional page or query that reproduced it.
@@ -61,6 +65,16 @@ When reporting an issue, include the snapshot version, the build command and the
 ### Support
 
 Use Issues for reproducible build or viewing problems.
+
+### Verification
+
+On November 23, 2026, `MSBuild JAyuda.sln /m:4 /nr:false /t:Rebuild /p:Configuration=Release /p:Platform=Win32 /p:PreferredToolArchitecture=x64` built the Win32 source and projects in the reconstruction available that day with Windows 11 Pro build 26300, Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC v145 14.51.36231, Windows SDK 10.0.26100.0, Python 3.12.4 and Docker Engine 29.9.2. `python -X utf8 examples/demo.py` opened the guide and the embedded sample, and the server confirmed `GET /ficha.html` with status 200. Searching for `DEMO-104` returned one result. The program closed with status 0.
+
+These images show the November 19 ribbon edition run against the fictional HTTP guide.
+
+![JAyuda displays the fictional guide and its HTTP topic](docs/media/guide.png)
+
+![JAyuda switches from the topic index to the search result for DEMO-104](docs/media/walkthrough.gif)
 
 ### License
 
@@ -74,7 +88,7 @@ The original code uses [MIT](LICENSE). The [third-party notices](THIRD-PARTY-NOT
 Visor de ayuda legado para Windows con índice de temas, búsqueda por palabras y enlaces entre páginas
 
 > [!WARNING]
-> **Estado: legado.** Es una aplicación MFC para Windows con el navegador MSHTML integrado del sistema.
+> **Estado: legado.** Es una aplicación MFC para Windows con el navegador MSHTML integrado del sistema. Los cuatro commits compilaron y encontraron la guía ficticia en las pruebas locales.
 
 ### Descripción general
 
@@ -111,7 +125,7 @@ Selecciona **Ayuda** para abrir la guía de demostración. El índice contiene *
 
 ### Estructura del proyecto
 
-`app/` contiene el código de la ventana y el proyecto original de Visual Studio. `vendor/` contiene los fuentes recuperados de las bibliotecas, con los proyectos originales y convertidos. `JAyuda.sln` compila el visor Win32 y sus bibliotecas. `compat/` conecta el nombre antiguo del encabezado de temas con el SDK actual de Windows. `examples/demo.py` genera la guía y su servidor HTTP local.
+`app/` contiene el código de la ventana y el proyecto original de Visual Studio. `vendor/` contiene los fuentes recuperados de las bibliotecas, con los proyectos originales y convertidos. `JAyuda.sln` compila el visor Win32 y sus bibliotecas. `compat/` conecta el nombre antiguo del encabezado de temas con el SDK actual de Windows. `examples/demo.py` genera la guía y su servidor HTTP local. `docs/media/` muestra la ventana y el resultado de búsqueda verificados.
 
 ### Historia
 
@@ -121,6 +135,10 @@ El recurso del ejecutable identifica esta versión del respaldo como 2.0.0.1. Es
 
 El recurso del proyecto identifica esta copia como 2.0.0.1. Consulta el primer commit para ver la 1.1.0.1 con su barra clásica. Las dos compilaciones portátiles guardan sus preferencias de Windows por separado para evitar conflictos entre los diseños del panel.
 
+### Qué verifica la guía ficticia
+
+La guía combina un índice local y un tema servido por un contenedor HTTP desechable. La página principal muestra los pasos de `DEMO-104`. En **Buscar**, la guía indexada aparece con una coincidencia. La prueba funciona sin serial de la aplicación ni el módulo de metadatos del instalador.
+
 ### Contribuir
 
 Al reportar un problema, incluye la versión del respaldo, el comando de compilación y la página ficticia o consulta que lo reprodujo.
@@ -128,6 +146,16 @@ Al reportar un problema, incluye la versión del respaldo, el comando de compila
 ### Soporte
 
 Usa Issues para problemas reproducibles de compilación o visualización.
+
+### Verificación
+
+El 23 de noviembre de 2026, `MSBuild JAyuda.sln /m:4 /nr:false /t:Rebuild /p:Configuration=Release /p:Platform=Win32 /p:PreferredToolArchitecture=x64` compiló los fuentes y proyectos Win32 de la reconstrucción disponible ese día con Windows 11 Pro compilación 26300, Visual Studio Community 2026 18.11.4, MSBuild 18.11.1.51303, MSVC v145 14.51.36231, Windows SDK 10.0.26100.0, Python 3.12.4 y Docker Engine 29.9.2. `python -X utf8 examples/demo.py` abrió la guía y la ficha incorporada. El servidor confirmó `GET /ficha.html` con estado 200. La búsqueda de `DEMO-104` devolvió un resultado. El programa cerró con estado 0.
+
+Las imágenes muestran el recorrido del 19 de noviembre con la versión de cinta y la guía HTTP ficticia.
+
+![JAyuda muestra la guía ficticia y su tema servido por HTTP](docs/media/guide.png)
+
+![JAyuda pasa del índice al resultado de búsqueda de DEMO-104](docs/media/walkthrough.gif)
 
 ### Licencia
 
